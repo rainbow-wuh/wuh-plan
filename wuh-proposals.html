@@ -609,7 +609,7 @@ function emptyProposal(){
     outputs:"", outcomes:"",
     fundCode:"E2200001", orgCode:"758200", programCode:"", accountCode:"BO-03000000", fundingSource:"F20000",
     budgetItems:[ {item:"",amount:0,category:"operating"} ],
-    multiYearBudget:{ year2:0, year3:0, year4:0, year5:0 },
+    multiYearBudget:[ {item:"",year2:0,year3:0,year4:0,year5:0} ],
     scenario:{ worst:{}, likely:{}, best:{} },
     risks: RISK_CATEGORIES.map(function(c){ return {category:c,event:"",impact:"",likelihood:"กลาง",mitigation:""}; }),
     actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""} ],
@@ -1832,26 +1832,44 @@ function renderBudgetSection(el,p){
 }
 
 function renderMultiYearBudgetSection(el,p){
-  if(!p.multiYearBudget) p.multiYearBudget={year2:0,year3:0,year4:0,year5:0};
-  var my=p.multiYearBudget;
+  if(!p.multiYearBudget || !Array.isArray(p.multiYearBudget)){
+    p.multiYearBudget=[ {item:"",year2:0,year3:0,year4:0,year5:0} ];
+  }
   el.innerHTML =
     '<div class="note-red">แสดงเฉพาะโครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี</div>'+
-    '<div style="margin:10px 0;color:var(--ink-muted);font-size:13px;">ระบุงบประมาณโดยประมาณของแต่ละปีถัดไป (ปีที่ 1 อยู่ในข้อ 6 รายละเอียดงบประมาณโครงการแล้ว)</div>'+
-    '<div class="field-row four">'+
-      fieldHTML("my-y2","ปีที่ 2","บาท",'<input type="number" id="my-y2" value="'+my.year2+'">')+
-      fieldHTML("my-y3","ปีที่ 3","บาท",'<input type="number" id="my-y3" value="'+my.year3+'">')+
-      fieldHTML("my-y4","ปีที่ 4","บาท",'<input type="number" id="my-y4" value="'+my.year4+'">')+
-      fieldHTML("my-y5","ปีที่ 5","บาท",'<input type="number" id="my-y5" value="'+my.year5+'">')+
-    '</div>'+
-    '<div class="summary-line"><div>รวมงบประมาณปีที่ 2-5</div><div class="amount num" id="my-total"></div></div>';
-  bindNum("my-y2",my,"year2"); bindNum("my-y3",my,"year3"); bindNum("my-y4",my,"year4"); bindNum("my-y5",my,"year5");
+    '<div style="margin:10px 0 12px;color:var(--ink-muted);font-size:13px;">ระบุงบประมาณของแต่ละรายการในปีถัดไป (ปีที่ 1 อยู่ในข้อ 6 รายละเอียดงบประมาณโครงการแล้ว)</div>'+
+    '<div class="table-wrap"><table class="grid-table"><thead><tr>'+
+      '<th>รายการ</th><th style="width:110px">ปีที่ 2</th><th style="width:110px">ปีที่ 3</th><th style="width:110px">ปีที่ 4</th><th style="width:110px">ปีที่ 5</th><th style="width:36px"></th>'+
+    '</tr></thead><tbody id="myb-body"></tbody></table></div>'+
+    '<div class="row-actions"><button class="add-row-btn" id="add-myb">+ เพิ่มรายการ</button></div>'+
+    '<div class="summary-line">'+
+      '<div>รวมงบประมาณแต่ละปี</div>'+
+      '<div class="amount num" id="myb-total" style="display:flex;gap:16px;font-size:14px;"></div>'+
+    '</div>';
+  var cols=[
+    {key:"item",type:"text"},
+    {key:"year2",type:"number"},{key:"year3",type:"number"},
+    {key:"year4",type:"number"},{key:"year5",type:"number"}
+  ];
   function refreshTotal(){
-    document.getElementById("my-total").textContent = fmtMoney(my.year2+my.year3+my.year4+my.year5)+" บาท";
+    var sums={year2:0,year3:0,year4:0,year5:0};
+    p.multiYearBudget.forEach(function(row){
+      sums.year2+=Number(row.year2)||0; sums.year3+=Number(row.year3)||0;
+      sums.year4+=Number(row.year4)||0; sums.year5+=Number(row.year5)||0;
+    });
+    document.getElementById("myb-total").innerHTML =
+      "<span>ปีที่ 2: "+fmtMoney(sums.year2)+"</span><span>ปีที่ 3: "+fmtMoney(sums.year3)+"</span>"+
+      "<span>ปีที่ 4: "+fmtMoney(sums.year4)+"</span><span>ปีที่ 5: "+fmtMoney(sums.year5)+"</span>";
   }
-  refreshTotal();
-  ["my-y2","my-y3","my-y4","my-y5"].forEach(function(id){
-    document.getElementById(id).addEventListener("input", refreshTotal);
-  });
+  function draw(){
+    renderArrayTable("myb-body", p.multiYearBudget, cols, refreshTotal);
+    refreshTotal();
+  }
+  draw();
+  document.getElementById("add-myb").onclick=function(){
+    p.multiYearBudget.push({item:"",year2:0,year3:0,year4:0,year5:0});
+    draw();
+  };
 }
 
 function renderScenarioSection(el,p){
