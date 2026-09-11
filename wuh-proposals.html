@@ -319,8 +319,9 @@ main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .field-row.three{grid-template-columns:1fr 1fr 1fr;}
 .field-row.five{grid-template-columns:repeat(5,1fr);}
+.field-row.four{grid-template-columns:repeat(4,1fr);}
 @media (max-width:720px){
-  .field-row,.field-row.three,.field-row.five{grid-template-columns:1fr;}
+  .field-row,.field-row.three,.field-row.five,.field-row.four{grid-template-columns:1fr;}
 }
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .field label{font-size:13px;font-weight:600;color:var(--ink-muted);}
@@ -608,6 +609,7 @@ function emptyProposal(){
     outputs:"", outcomes:"",
     fundCode:"E2200001", orgCode:"758200", programCode:"", accountCode:"BO-03000000", fundingSource:"F20000",
     budgetItems:[ {item:"",amount:0,category:"operating"} ],
+    multiYearBudget:{ year2:0, year3:0, year4:0, year5:0 },
     scenario:{ worst:{}, likely:{}, best:{} },
     risks: RISK_CATEGORIES.map(function(c){ return {category:c,event:"",impact:"",likelihood:"กลาง",mitigation:""}; }),
     actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""} ],
@@ -1589,6 +1591,9 @@ function renderDetail(){
       '<button class="btn-primary" id="btn-save">บันทึกโครงการ</button>'+
     '</div>';
 
+  var isNewType = (p.type==="new1y"||p.type==="newspecial");
+  var hideUnlessNew = function(){ return !isNewType; };
+  var hideUnlessSpecial = function(){ return p.type!=="newspecial"; };
   var sections=[
     {num:"·",th:"ข้อมูลหน่วยงานและประเภทโครงการ",en:"Department & project type",render:renderHeaderSection},
     {num:1,th:"ชื่อโครงการ",en:"Project name",render:renderNameSection},
@@ -1597,27 +1602,28 @@ function renderDetail(){
     {num:4,th:"รูปแบบและแผนการดำเนินงาน",en:"Implementation plan",render:renderImplementationSection},
     {num:5,th:"ผลสัมฤทธิ์ของโครงการ / ตัวชี้วัดความสำเร็จ",en:"Outcomes & KPIs",render:renderOutcomesSection},
     {num:6,th:"รายละเอียดงบประมาณโครงการ",en:"Budget details",render:renderBudgetSection},
-    {num:7,th:"แผนบริหารความเสี่ยง",en:"Risk management",render:renderRiskSection},
-    {num:8,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,onlyNew:true},
-    {num:9,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
-    {num:10,th:"ผู้เสนอโครงการ",en:"Proposer sign-off",render:renderSignatorySection},
-    {num:11,th:"การประเมินแบบ Realistic Scenario",en:"Scenario planning",render:renderScenarioSection}
+    {num:7,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
+    {num:8,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,hide:hideUnlessNew},
+    {num:9,th:"แผนบริหารความเสี่ยง (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Risk management",render:renderRiskSection,hide:hideUnlessNew},
+    {num:10,th:"กรณีโครงการดำเนินงานมากกว่า 1 ปี ให้ระบุงบประมาณแต่ละปี (ปีที่ 2 ถึงปีที่ 5)",en:"Multi-year budget (special projects only)",render:renderMultiYearBudgetSection,hide:hideUnlessSpecial},
+    {num:11,th:"การประเมินแบบ Realistic Scenario (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Scenario planning",render:renderScenarioSection,hide:hideUnlessNew},
+    {num:12,th:"ผู้นำเสนอโครงการ",en:"Proposer sign-off",render:renderSignatorySection}
   ];
 
   var wrap=document.getElementById("sections");
   var nav=document.getElementById("section-nav");
-  var isNewType = (p.type==="new1y"||p.type==="newspecial");
   sections.forEach(function(s){
+    var hidden = s.hide ? s.hide() : false;
     var card=document.createElement("div");
     card.className="section-card";
     card.id="sec-"+s.num;
-    if(s.onlyNew && !isNewType) card.style.display="none";
+    if(hidden) card.style.display="none";
     card.innerHTML = sectionHead(s.num,s.th,s.en) + '<div class="section-body"></div>';
     wrap.appendChild(card);
     s.render(card.querySelector(".section-body"), p);
     card.querySelector(".section-head").onclick=function(){ card.classList.toggle("collapsed"); };
 
-    if(!(s.onlyNew && !isNewType)){
+    if(!hidden){
       var navBtn=document.createElement("button");
       navBtn.textContent=s.num+". "+s.th;
       navBtn.onclick=function(){ card.classList.remove("collapsed"); card.scrollIntoView({behavior:"smooth",block:"start"}); };
@@ -1823,6 +1829,29 @@ function renderBudgetSection(el,p){
     p.budgetItems.push({item:"",amount:0,category:"operating"});
     draw();
   };
+}
+
+function renderMultiYearBudgetSection(el,p){
+  if(!p.multiYearBudget) p.multiYearBudget={year2:0,year3:0,year4:0,year5:0};
+  var my=p.multiYearBudget;
+  el.innerHTML =
+    '<div class="note-red">แสดงเฉพาะโครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี</div>'+
+    '<div style="margin:10px 0;color:var(--ink-muted);font-size:13px;">ระบุงบประมาณโดยประมาณของแต่ละปีถัดไป (ปีที่ 1 อยู่ในข้อ 6 รายละเอียดงบประมาณโครงการแล้ว)</div>'+
+    '<div class="field-row four">'+
+      fieldHTML("my-y2","ปีที่ 2","บาท",'<input type="number" id="my-y2" value="'+my.year2+'">')+
+      fieldHTML("my-y3","ปีที่ 3","บาท",'<input type="number" id="my-y3" value="'+my.year3+'">')+
+      fieldHTML("my-y4","ปีที่ 4","บาท",'<input type="number" id="my-y4" value="'+my.year4+'">')+
+      fieldHTML("my-y5","ปีที่ 5","บาท",'<input type="number" id="my-y5" value="'+my.year5+'">')+
+    '</div>'+
+    '<div class="summary-line"><div>รวมงบประมาณปีที่ 2-5</div><div class="amount num" id="my-total"></div></div>';
+  bindNum("my-y2",my,"year2"); bindNum("my-y3",my,"year3"); bindNum("my-y4",my,"year4"); bindNum("my-y5",my,"year5");
+  function refreshTotal(){
+    document.getElementById("my-total").textContent = fmtMoney(my.year2+my.year3+my.year4+my.year5)+" บาท";
+  }
+  refreshTotal();
+  ["my-y2","my-y3","my-y4","my-y5"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", refreshTotal);
+  });
 }
 
 function renderScenarioSection(el,p){
