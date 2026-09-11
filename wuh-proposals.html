@@ -22,6 +22,14 @@
   --status-revision-soft:#F8EEDD;
   --danger:#B23B3B;
   --danger-soft:#F8E7E7;
+  --cat-compensation:#4C6FCB;
+  --cat-compensation-soft:#E7ECFB;
+  --cat-operating:#2F9E77;
+  --cat-operating-soft:#E1F3EC;
+  --cat-materials:#8B5FBF;
+  --cat-materials-soft:#EFE7F8;
+  --cat-capital:#D98A2B;
+  --cat-capital-soft:#FBEEDC;
   --shadow:0 1px 2px rgba(38,36,30,0.06),0 4px 14px rgba(38,36,30,0.05);
 }
 @media (prefers-color-scheme: dark){
@@ -47,6 +55,14 @@
     --status-revision-soft:#3A2E17;
     --danger:#E08787;
     --danger-soft:#3A2222;
+    --cat-compensation:#8AA3E8;
+    --cat-compensation-soft:#26304A;
+    --cat-operating:#7BC9A8;
+    --cat-operating-soft:#1E3A30;
+    --cat-materials:#C3A3E0;
+    --cat-materials-soft:#382C46;
+    --cat-capital:#E8B368;
+    --cat-capital-soft:#3E2F1B;
     --shadow:0 1px 2px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.35);
   }
 }
@@ -72,6 +88,14 @@
   --status-revision-soft:#3A2E17;
   --danger:#E08787;
   --danger-soft:#3A2222;
+  --cat-compensation:#8AA3E8;
+  --cat-compensation-soft:#26304A;
+  --cat-operating:#7BC9A8;
+  --cat-operating-soft:#1E3A30;
+  --cat-materials:#C3A3E0;
+  --cat-materials-soft:#382C46;
+  --cat-capital:#E8B368;
+  --cat-capital-soft:#3E2F1B;
   --shadow:0 1px 2px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.35);
 }
 *{box-sizing:border-box;}
@@ -121,10 +145,56 @@ a{color:var(--accent);}
 }
 #topbar button.ghost:hover{background:rgba(255,255,255,.24);}
 
+/* tab bar */
+#tabbar{
+  display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:10px 20px;
+}
+#tabbar .tab{
+  background:transparent;border:1px solid transparent;color:var(--ink-muted);
+  padding:9px 14px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+}
+#tabbar .tab:hover{background:var(--surface-alt);color:var(--ink);}
+#tabbar .tab.active{background:var(--accent-soft);color:var(--accent);}
+#tabbar .tab .tab-icon{font-size:15px;}
+#tabbar .tab .tab-count{
+  background:var(--accent);color:var(--accent-ink);
+  font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;
+}
+#tabbar .tab:not(.active) .tab-count{background:var(--border);color:var(--ink-muted);}
+
 main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 
+.page-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.page-sub{color:var(--ink-muted);font-size:13.5px;margin-bottom:20px;}
+.panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;}
+.panel-title{font-size:15px;font-weight:700;margin:0 0 12px;}
+.panel-head .panel-title{margin:0;}
+.cat-stats .stat-tile{border-top:3px solid transparent;}
+.cat-stats .stat-tile.cat-compensation{border-top-color:var(--cat-compensation);}
+.cat-stats .stat-tile.cat-operating{border-top-color:var(--cat-operating);}
+.cat-stats .stat-tile.cat-materials{border-top-color:var(--cat-materials);}
+.cat-stats .stat-tile.cat-capital{border-top-color:var(--cat-capital);}
+.chart-svg text{font-family:"Sarabun",system-ui,sans-serif;}
+.recent-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;
+}
+.recent-row:last-child{border-bottom:none;}
+.recent-row:hover .recent-name{color:var(--accent);}
+.recent-row .recent-name{font-weight:600;font-size:14px;}
+.recent-row .recent-meta{font-size:12px;color:var(--ink-muted);margin-top:2px;}
+.recent-row .recent-right{text-align:right;flex:none;}
+
 /* --------- list view --------- */
-#view-list .stats{
+.stats{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
   gap:12px;
@@ -345,7 +415,7 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
   font-size:13px;margin-bottom:16px;
 }
 @media print{
-  #topbar,.toolbar,.savebar,.section-nav,.icon-btn,.add-row-btn,#view-list{display:none !important;}
+  #topbar,#tabbar,.toolbar,.savebar,.section-nav,.icon-btn,.add-row-btn,#view-dashboard,#view-registry,#view-budget,#view-strategy{display:none !important;}
   body{background:#fff;color:#000;}
   .section-card{box-shadow:none;border:1px solid #999;break-inside:avoid;}
 }
@@ -365,12 +435,21 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
   <div class="actions" id="topbar-actions"></div>
 </div>
 
+<nav id="tabbar">
+  <button class="tab" data-tab="dashboard"><span class="tab-icon">📊</span><span>ภาพรวมแผนงาน</span></button>
+  <button class="tab" data-tab="registry"><span class="tab-icon">📁</span><span>ทะเบียนข้อเสนอโครงการ</span><span class="tab-count" id="tab-count">0</span></button>
+  <button class="tab" data-tab="budget"><span class="tab-icon">📈</span><span>วิเคราะห์จำแนกงบประมาณ</span></button>
+  <button class="tab" data-tab="strategy"><span class="tab-icon">🎯</span><span>สอดคล้องยุทธศาสตร์</span></button>
+</nav>
+
 <main>
   <div id="offline-note" class="offline-note" style="display:none;">
     หน้านี้กำลังแสดงข้อมูลตัวอย่างในเครื่องเท่านั้น การแก้ไขจะไม่ถูกบันทึกแบบเรียลไทม์ — เปิดผ่านลิงก์ที่เผยแพร่บน claude.ai เพื่อบันทึกและแชร์ข้อมูลกับทีม
   </div>
-  <section id="view-list">
-    <div class="stats" id="stats"></div>
+
+  <section id="view-dashboard"></section>
+
+  <section id="view-registry" style="display:none;">
     <div class="toolbar">
       <input type="search" id="search-input" placeholder="ค้นหาชื่อโครงการ / หน่วยงาน…">
       <select id="filter-status">
@@ -392,7 +471,10 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
     <div id="cards"></div>
   </section>
 
-  <section id="view-detail"></section>
+  <section id="view-budget" style="display:none;"></section>
+  <section id="view-strategy" style="display:none;"></section>
+
+  <section id="view-detail" style="display:none;"></section>
 </main>
 
 <div id="modal-root"></div>
@@ -469,6 +551,14 @@ var TYPE_META = {
   newspecial:{label:"โครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี",hint:"(กรอกข้อมูลข้อ 1-10)",cls:"type-newspecial"}
 };
 
+var CATEGORY_META = {
+  compensation:{label:"ค่าตอบแทน",cls:"cat-compensation"},
+  operating:{label:"ค่าใช้สอย",cls:"cat-operating"},
+  materials:{label:"ค่าวัสดุ",cls:"cat-materials"},
+  capital:{label:"ค่าครุภัณฑ์/สิ่งก่อสร้าง",cls:"cat-capital"}
+};
+var CATEGORY_ORDER = ["compensation","operating","materials","capital"];
+
 function uid(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
 function emptyProposal(){
@@ -486,7 +576,7 @@ function emptyProposal(){
     qualitative:{ safety:"", morale:"" },
     outputs:"", outcomes:"",
     fundCode:"E2200001", orgCode:"758200", programCode:"", accountCode:"BO-03000000", fundingSource:"F20000",
-    budgetItems:[ {item:"",amount:0} ],
+    budgetItems:[ {item:"",amount:0,category:"operating"} ],
     scenario:{ worst:{}, likely:{}, best:{} },
     risks: RISK_CATEGORIES.map(function(c){ return {category:c,event:"",impact:"",likelihood:"กลาง",mitigation:""}; }),
     actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""} ],
@@ -730,7 +820,7 @@ async function downloadProposalExcel(p){
 var db=null, dbReady=false;
 var proposals=[]; // list snapshot
 var current=null; // proposal being edited
-var view="list";
+var view="dashboard";
 var unsubList=null;
 
 function toast(msg){
@@ -784,10 +874,10 @@ function exampleSeed(){
   a.outcomes="ลดวันนอนเฉลี่ยของผู้ป่วยผ่าตัดเล็กลงร้อยละ 40 ภายในปีแรก";
   a.programCode="Z40101030-01";
   a.budgetItems=[
-    {item:"ครุภัณฑ์ชุดผ่าตัดเล็กและเตียงพักฟื้น",amount:960000},
-    {item:"ปรับปรุงพื้นที่หน่วยผ่าตัด",amount:340000},
-    {item:"ค่าตอบแทนทีมปฏิบัติงานนอกเวลา",amount:180000},
-    {item:"วัสดุการแพทย์สำรองเริ่มต้น",amount:220000}
+    {item:"ครุภัณฑ์ชุดผ่าตัดเล็กและเตียงพักฟื้น",amount:960000,category:"capital"},
+    {item:"ปรับปรุงพื้นที่หน่วยผ่าตัด",amount:340000,category:"capital"},
+    {item:"ค่าตอบแทนทีมปฏิบัติงานนอกเวลา",amount:180000,category:"compensation"},
+    {item:"วัสดุการแพทย์สำรองเริ่มต้น",amount:220000,category:"materials"}
   ];
   a.scenario={
     worst:{overview:"ผู้ป่วยใช้บริการต่ำกว่าคาด",patients:2800,totalCost:1900000,totalRevenue:2100000,netIncome:200000},
@@ -824,7 +914,7 @@ function exampleSeed(){
   b.workSteps=[{period:"ตลอดปีงบประมาณ",activity:"บำรุงรักษาเชิงป้องกันรายไตรมาส",responsible:"ฝ่ายเภสัชกรรม",note:""}];
   b.outputs="ระบบจ่ายยาอัตโนมัติพร้อมใช้งานตลอดปี"; b.outcomes="อัตราความคลาดเคลื่อนในการจ่ายยาต่ำกว่า 0.1%";
   b.programCode="Z40101030-02";
-  b.budgetItems=[{item:"ค่าบำรุงรักษาระบบจ่ายยาอัตโนมัติรายปี",amount:480000},{item:"วัสดุสิ้นเปลืองสำหรับระบบ",amount:95000}];
+  b.budgetItems=[{item:"ค่าบำรุงรักษาระบบจ่ายยาอัตโนมัติรายปี",amount:480000,category:"operating"},{item:"วัสดุสิ้นเปลืองสำหรับระบบ",amount:95000,category:"materials"}];
   b.risks=RISK_CATEGORIES.map(function(c){return {category:c,event:"",impact:"",likelihood:"ต่ำ",mitigation:""};});
   b.actionPlan=[{activity:"ต่อสัญญาบำรุงรักษา (Plan)",timeline:"ต.ค. 2568",kpi:"ลงนามสัญญาทันกำหนด",budget:"480,000",link:"WUH-2",responsible:"หัวหน้าเภสัชกรรม"}];
   b.signatory={name:"ภญ. วราภรณ์ สุขใจ",position:"หัวหน้าฝ่ายเภสัชกรรม",date:"2025-08-20"};
@@ -833,47 +923,144 @@ function exampleSeed(){
   return [a,b];
 }
 
+var TABS = ["dashboard","registry","budget","strategy"];
+
 function renderTopbarActions(){
   var el=document.getElementById("topbar-actions");
-  if(view==="list"){
+  if(view!=="detail"){
     el.innerHTML="";
   } else {
     el.innerHTML='<button class="ghost" id="btn-back">← กลับสู่รายการโครงการ</button>';
-    document.getElementById("btn-back").onclick=function(){ goList(); };
+    document.getElementById("btn-back").onclick=function(){ backFromDetail(); };
   }
 }
 
-function goList(){
-  view="list"; current=null;
-  document.getElementById("view-list").style.display="";
-  document.getElementById("view-detail").style.display="none";
+function renderShell(){
+  TABS.forEach(function(t){
+    var sec=document.getElementById("view-"+t);
+    if(sec) sec.style.display = (view===t) ? "block" : "none";
+  });
+  document.getElementById("view-detail").style.display = (view==="detail") ? "block" : "none";
+  document.getElementById("tabbar").style.display = (view==="detail") ? "none" : "flex";
+  document.getElementById("tab-count").textContent = fmtInt(proposals.length);
+  Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(btn){
+    btn.classList.toggle("active", btn.getAttribute("data-tab")===view);
+  });
   renderTopbarActions();
-  renderList();
+  if(view==="dashboard") renderDashboard();
+  else if(view==="registry") renderRegistry();
+  else if(view==="budget") renderBudgetAnalysis();
+  else if(view==="strategy") renderStrategyAnalysis();
+}
+
+function switchTab(tab){
+  view=tab; current=null;
+  renderShell();
 }
 
 function goDetail(proposal){
   view="detail"; current=proposal;
-  document.getElementById("view-list").style.display="none";
-  document.getElementById("view-detail").style.display="block";
-  renderTopbarActions();
+  renderShell();
   renderDetail();
 }
 
-/* ---- list rendering ---- */
-function renderStats(){
-  var total=proposals.length;
+function backFromDetail(){
+  view="registry"; current=null;
+  renderShell();
+}
+
+/* ---- chart helper (inline SVG, theme-aware via CSS vars) ---- */
+function niceCeil(v){
+  if(v<=0) return 1;
+  var exp=Math.floor(Math.log10(v));
+  var base=Math.pow(10,exp);
+  var f=v/base;
+  var niceF = f<=1?1:(f<=2?2:(f<=5?5:10));
+  return niceF*base;
+}
+function renderBarChart(container, data, opts){
+  opts=opts||{};
+  var w=opts.width||640, h=opts.height||260;
+  var padL=64,padR=16,padT=14,padB=40;
+  var innerW=w-padL-padR, innerH=h-padT-padB;
+  var maxVal=Math.max.apply(null, data.map(function(d){ return d.value; }).concat([0]));
+  var rawStep=(maxVal||1)/5;
+  var step=niceCeil(rawStep);
+  if(opts.integer) step=Math.max(1, Math.ceil(step));
+  var tickCount=Math.max(1, Math.ceil((maxVal||1)/step));
+  var niceMax=step*tickCount;
+  var n=data.length||1;
+  var slot=innerW/n;
+  var barW=Math.max(18, slot*0.55);
+  var svg='<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">';
+  for(var i=0;i<=tickCount;i++){
+    var val=step*i;
+    var y=padT+innerH-(innerH*(val/niceMax));
+    svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(w-padR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>';
+    svg+='<text x="'+(padL-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="var(--ink-muted)">'+fmtInt(Math.round(val))+'</text>';
+  }
+  data.forEach(function(d,i){
+    var bx=padL+i*slot+(slot-barW)/2;
+    var bh=maxVal<=0?0:innerH*((d.value||0)/niceMax);
+    var by=padT+innerH-bh;
+    svg+='<rect x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,bh).toFixed(1)+'" rx="4" fill="'+d.color+'"/>';
+    svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(h-padB+18)+'" text-anchor="middle" font-size="12" fill="var(--ink-muted)">'+esc(d.label)+'</text>';
+    if(opts.showValue){
+      svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(by-6).toFixed(1)+'" text-anchor="middle" font-size="11" fill="var(--ink)" font-weight="700">'+fmtInt(d.value)+'</text>';
+    }
+  });
+  svg+='</svg>';
+  container.innerHTML = svg;
+}
+
+/* ---- dashboard ---- */
+function renderDashboard(){
+  var el=document.getElementById("view-dashboard");
   var byStatus={draft:0,submitted:0,approved:0,revision:0};
   var totalBudget=0;
   proposals.forEach(function(p){ byStatus[p.status]=(byStatus[p.status]||0)+1; totalBudget+=budgetTotal(p); });
-  document.getElementById("stats").innerHTML =
-    '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(total)+'</div></div>'+
-    '<div class="stat-tile"><div class="label">งบประมาณรวมที่เสนอ</div><div class="value small num">'+fmtMoney(totalBudget)+' บาท</div></div>'+
-    '<div class="stat-tile"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
-    '<div class="stat-tile"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>';
+  var recent=proposals.slice().sort(function(a,b){ return (b.updatedAt||"").localeCompare(a.updatedAt||""); }).slice(0,5);
+
+  el.innerHTML =
+    '<div class="page-title">ภาพรวมแผนงาน</div>'+
+    '<div class="page-sub">สรุปภาพรวมข้อเสนอโครงการและงบประมาณทั้งหมด</div>'+
+    '<div class="stats">'+
+      '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(proposals.length)+'</div></div>'+
+      '<div class="stat-tile"><div class="label">งบประมาณรวมที่เสนอ</div><div class="value small num">'+fmtMoney(totalBudget)+' บาท</div></div>'+
+      '<div class="stat-tile"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
+      '<div class="stat-tile"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>'+
+    '</div>'+
+    '<div class="panel"><h3 class="panel-title">จำนวนโครงการตามสถานะ</h3><div id="dash-status-chart"></div></div>'+
+    '<div class="panel"><div class="panel-head"><h3 class="panel-title">โครงการล่าสุด</h3><button class="btn-secondary" id="dash-view-all">ดูทั้งหมด →</button></div><div id="dash-recent"></div></div>';
+
+  renderBarChart(document.getElementById("dash-status-chart"), Object.keys(STATUS_META).map(function(k){
+    return {label:STATUS_META[k].label, value:byStatus[k]||0, color:"var(--status-"+k+")"};
+  }), {showValue:true, integer:true});
+
+  var recentEl=document.getElementById("dash-recent");
+  if(recent.length===0){
+    recentEl.innerHTML='<div class="empty-state">ยังไม่มีโครงการ</div>';
+  } else {
+    recentEl.innerHTML = recent.map(function(p){
+      var st=STATUS_META[p.status]||STATUS_META.draft;
+      return '<div class="recent-row" data-id="'+esc(p.id)+'">'+
+        '<div><div class="recent-name">'+esc(p.name||"(ยังไม่ระบุชื่อโครงการ)")+'</div>'+
+        '<div class="recent-meta">'+esc(p.division||"-")+' · แก้ไขล่าสุด '+timeAgo(p.updatedAt)+'</div></div>'+
+        '<div class="recent-right"><span class="badge '+st.cls+'">'+st.label+'</span></div>'+
+      '</div>';
+    }).join("");
+    Array.prototype.forEach.call(recentEl.querySelectorAll(".recent-row"), function(row){
+      row.onclick=function(){
+        var p=proposals.find(function(x){ return x.id===row.getAttribute("data-id"); });
+        if(p) goDetail(JSON.parse(JSON.stringify(p)));
+      };
+    });
+  }
+  document.getElementById("dash-view-all").onclick=function(){ switchTab("registry"); };
 }
 
-function renderList(){
-  renderStats();
+/* ---- registry (list) ---- */
+function renderRegistry(){
   var q=(document.getElementById("search-input").value||"").trim().toLowerCase();
   var fStatus=document.getElementById("filter-status").value;
   var fType=document.getElementById("filter-type").value;
@@ -924,6 +1111,69 @@ function renderList(){
       if(p) downloadProposalExcel(p);
     };
   });
+}
+
+/* ---- budget breakdown analysis ---- */
+function renderBudgetAnalysis(){
+  var el=document.getElementById("view-budget");
+  var totals={compensation:0,operating:0,materials:0,capital:0};
+  proposals.forEach(function(p){
+    (p.budgetItems||[]).forEach(function(it){
+      var cat = it.category && totals.hasOwnProperty(it.category) ? it.category : "operating";
+      totals[cat] += Number(it.amount)||0;
+    });
+  });
+  var grand = CATEGORY_ORDER.reduce(function(s,k){ return s+totals[k]; },0);
+
+  el.innerHTML =
+    '<div class="page-title">การวิเคราะห์สัดส่วนงบประมาณจำแนกตามรายจ่าย</div>'+
+    '<div class="page-sub">สรุปการจัดสรรงบประมาณตามหมวด ค่าตอบแทน ค่าใช้สอย ค่าวัสดุ ค่าครุภัณฑ์/สิ่งก่อสร้าง จากโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="stats cat-stats">'+
+      CATEGORY_ORDER.map(function(k){
+        return '<div class="stat-tile '+CATEGORY_META[k].cls+'"><div class="label">'+CATEGORY_META[k].label+'</div><div class="value num">฿'+fmtInt(totals[k])+'</div></div>';
+      }).join("")+
+    '</div>'+
+    '<div class="panel"><div id="budget-chart"></div></div>';
+
+  var chartEl=document.getElementById("budget-chart");
+  if(grand<=0){
+    chartEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลงบประมาณให้วิเคราะห์</div>';
+  } else {
+    renderBarChart(chartEl, CATEGORY_ORDER.map(function(k){
+      return {label:CATEGORY_META[k].label, value:totals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
+    }));
+  }
+}
+
+/* ---- strategic alignment analysis ---- */
+function renderStrategyAnalysis(){
+  var el=document.getElementById("view-strategy");
+  var hospCounts={}; STRATEGIES.hospital.forEach(function(h){ hospCounts[h.id]=0; });
+  var uniCounts={}; STRATEGIES.university.forEach(function(s){ uniCounts[s.code]=0; });
+  proposals.forEach(function(p){
+    ((p.strategies&&p.strategies.hospital)||[]).forEach(function(id){ if(hospCounts.hasOwnProperty(id)) hospCounts[id]++; });
+    var uni=(p.strategies&&p.strategies.university)||{};
+    Object.keys(uni).forEach(function(code){
+      var entry=uni[code];
+      var hasTag = entry && (((entry.kpis||[]).length)||((entry.measures||[]).length));
+      if(hasTag && uniCounts.hasOwnProperty(code)) uniCounts[code]++;
+    });
+  });
+
+  el.innerHTML =
+    '<div class="page-title">ความสอดคล้องกับยุทธศาสตร์</div>'+
+    '<div class="page-sub">จำนวนโครงการที่เชื่อมโยงกับแต่ละยุทธศาสตร์ จากโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="panel"><h3 class="panel-title">ยุทธศาสตร์ระดับโรงพยาบาล (Hospital-level)</h3><div id="strategy-hosp-chart"></div></div>'+
+    '<div class="panel"><h3 class="panel-title">ยุทธศาสตร์ระดับมหาวิทยาลัย (University-level)</h3><div class="stats">'+
+      STRATEGIES.university.map(function(s){
+        return '<div class="stat-tile"><div class="label">'+esc(s.code)+'</div><div class="value num">'+fmtInt(uniCounts[s.code]||0)+' โครงการ</div></div>';
+      }).join("")+
+    '</div></div>';
+
+  var palette=CATEGORY_ORDER.map(function(k){ return "var(--"+CATEGORY_META[k].cls+")"; });
+  renderBarChart(document.getElementById("strategy-hosp-chart"), STRATEGIES.hospital.map(function(h,i){
+    return {label:h.id, value:hospCounts[h.id]||0, color:palette[i%palette.length]};
+  }), {showValue:true, integer:true});
 }
 
 /* ---- detail rendering ---- */
@@ -994,7 +1244,7 @@ function renderDetail(){
   });
 
   document.getElementById("btn-cancel").onclick=function(){
-    showModal("ยกเลิกการแก้ไข","การเปลี่ยนแปลงที่ยังไม่บันทึกจะหายไป ยืนยันหรือไม่?",function(){ goList(); },"ยกเลิกการแก้ไข",true);
+    showModal("ยกเลิกการแก้ไข","การเปลี่ยนแปลงที่ยังไม่บันทึกจะหายไป ยืนยันหรือไม่?",function(){ backFromDetail(); },"ยกเลิกการแก้ไข",true);
   };
   document.getElementById("btn-save").onclick=saveCurrent;
   document.getElementById("btn-download").onclick=function(){ downloadProposalExcel(p); };
@@ -1164,26 +1414,31 @@ function renderBudgetSection(el,p){
       fieldHTML("b-account","ผังบัญชี","",'<input type="text" id="b-account" value="'+esc(p.accountCode)+'">')+
       fieldHTML("b-source","แหล่งเงิน","",'<input type="text" id="b-source" value="'+esc(p.fundingSource)+'">')+
     '</div>'+
-    '<div class="table-wrap"><table class="grid-table"><thead><tr><th>รายการ</th><th style="width:160px">งบประมาณ (บาท)</th><th style="width:36px"></th></tr></thead>'+
+    '<div class="table-wrap"><table class="grid-table"><thead><tr><th>รายการ</th><th style="width:170px">หมวดรายจ่าย</th><th style="width:150px">งบประมาณ (บาท)</th><th style="width:36px"></th></tr></thead>'+
     '<tbody id="budget-body"></tbody></table></div>'+
     '<div class="row-actions"><button class="add-row-btn" id="add-budget">+ เพิ่มรายการ</button></div>'+
     '<div class="summary-line"><div>งบประมาณทั้งสิ้น<div class="words" id="budget-words"></div></div>'+
     '<div class="amount num" id="budget-total"></div></div>'+
-    '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:6px;">*ถัวเฉลี่ยทุกรายการ</div>';
+    '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:6px;">*ถัวเฉลี่ยทุกรายการ · หมวดรายจ่ายใช้สำหรับแท็บ “วิเคราะห์จำแนกงบประมาณ”</div>';
   bindText("b-fund",p,"fundCode"); bindText("b-org",p,"orgCode"); bindText("b-program",p,"programCode");
   bindText("b-account",p,"accountCode"); bindText("b-source",p,"fundingSource");
+  var budgetCols=[
+    {key:"item",type:"text"},
+    {key:"category",type:"select",options:CATEGORY_ORDER.map(function(k){ return {value:k,label:CATEGORY_META[k].label}; })},
+    {key:"amount",type:"number"}
+  ];
   function refreshTotal(){
     var t=budgetTotal(p);
     document.getElementById("budget-total").textContent=fmtMoney(t)+" บาท";
     document.getElementById("budget-words").textContent="("+thaiBahtText(t)+")";
   }
   function draw(){
-    renderArrayTable("budget-body",p.budgetItems,[{key:"item",type:"text"},{key:"amount",type:"number"}],refreshTotal);
+    renderArrayTable("budget-body",p.budgetItems,budgetCols,refreshTotal);
     refreshTotal();
   }
   draw();
   document.getElementById("add-budget").onclick=function(){
-    p.budgetItems.push({item:"",amount:0});
+    p.budgetItems.push({item:"",amount:0,category:"operating"});
     draw();
   };
 }
@@ -1275,16 +1530,24 @@ function renderArrayTable(tbodyId, arr, cols, onChange){
   tbody.innerHTML = arr.map(function(row,i){
     return '<tr>'+cols.map(function(c){
       var v=row[c.key]==null?"":row[c.key];
+      if(c.type==="select"){
+        var opts=(c.options||[]).map(function(o){
+          return '<option value="'+esc(o.value)+'"'+(String(v)===String(o.value)?" selected":"")+'>'+esc(o.label)+'</option>';
+        }).join("");
+        return '<td><select data-row="'+i+'" data-key="'+c.key+'">'+opts+'</select></td>';
+      }
       return '<td><input type="'+(c.type==="number"?"number":"text")+'" data-row="'+i+'" data-key="'+c.key+'" value="'+esc(v)+'"></td>';
     }).join("")+'<td><button class="icon-btn" data-remove="'+i+'" title="ลบแถว">✕</button></td></tr>';
   }).join("");
-  Array.prototype.forEach.call(tbody.querySelectorAll("input"), function(inp){
-    inp.oninput=function(){
+  Array.prototype.forEach.call(tbody.querySelectorAll("input,select"), function(inp){
+    var handler=function(){
       var i=parseInt(inp.getAttribute("data-row"),10), k=inp.getAttribute("data-key");
       var col=cols.find(function(c){ return c.key===k; });
       arr[i][k] = col.type==="number" ? (parseFloat(inp.value)||0) : inp.value;
       if(onChange) onChange();
     };
+    inp.oninput=handler;
+    inp.onchange=handler;
   });
   Array.prototype.forEach.call(tbody.querySelectorAll("[data-remove]"), function(btn){
     btn.onclick=function(){
@@ -1311,7 +1574,7 @@ function saveCurrent(){
     var data=JSON.parse(JSON.stringify(p));
     ref.set(data).then(function(){
       toast("บันทึกโครงการเรียบร้อย");
-      goList();
+      backFromDetail();
     }).catch(function(err){
       toast("บันทึกไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
     });
@@ -1321,7 +1584,7 @@ function saveCurrent(){
     if(idx>-1) proposals[idx]=p; else proposals.push(p);
     saveLocal(proposals);
     toast("บันทึกในเครื่องนี้แล้ว (โหมดออฟไลน์)");
-    goList();
+    backFromDetail();
   }
 }
 
@@ -1330,22 +1593,25 @@ function deleteCurrent(){
   if(db){
     db.collection("proposals").doc(p.id).delete().then(function(){
       toast("ลบโครงการแล้ว");
-      goList();
+      backFromDetail();
     }).catch(function(err){ toast("ลบไม่สำเร็จ: "+(err&&err.message?err.message:"unknown")); });
   } else {
     proposals=proposals.filter(function(x){ return x.id!==p.id; });
     saveLocal(proposals);
     toast("ลบโครงการแล้ว");
-    goList();
+    backFromDetail();
   }
 }
 
 /* ---- boot ---- */
 function attachListListeners(){
   document.getElementById("btn-new").onclick=function(){ goDetail(emptyProposal()); };
-  document.getElementById("search-input").oninput=function(){ renderList(); };
-  document.getElementById("filter-status").onchange=function(){ renderList(); };
-  document.getElementById("filter-type").onchange=function(){ renderList(); };
+  document.getElementById("search-input").oninput=function(){ renderRegistry(); };
+  document.getElementById("filter-status").onchange=function(){ renderRegistry(); };
+  document.getElementById("filter-type").onchange=function(){ renderRegistry(); };
+  Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(btn){
+    btn.onclick=function(){ switchTab(btn.getAttribute("data-tab")); };
+  });
 }
 
 function boot(){
@@ -1360,8 +1626,8 @@ function boot(){
           if(proposals.length===0){
             var seed=exampleSeed();
             seed.forEach(function(p){ db.collection("proposals").doc(p.id).set(p); });
-          } else if(view==="list"){
-            renderList();
+          } else {
+            renderShell();
           }
         }, function(err){
           toast("การเชื่อมต่อฐานข้อมูลขัดข้อง: "+(err&&err.message?err.message:"unknown"));
@@ -1382,10 +1648,10 @@ function initOffline(){
   var local=loadLocal();
   proposals = local && local.length ? local : exampleSeed();
   if(!local) saveLocal(proposals);
-  renderList();
+  renderShell();
 }
 
 boot();
-renderList();
+renderShell();
 })();
 </script>
