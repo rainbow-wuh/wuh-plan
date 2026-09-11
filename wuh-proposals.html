@@ -183,6 +183,12 @@ main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 .cat-stats .stat-tile.cat-materials{border-top-color:var(--cat-materials);}
 .cat-stats .stat-tile.cat-capital{border-top-color:var(--cat-capital);}
 .chart-svg text{font-family:"Sarabun",system-ui,sans-serif;}
+.panel-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;}
+.panel-row .panel{margin-bottom:0;display:flex;flex-direction:column;}
+@media (max-width:760px){.panel-row{grid-template-columns:1fr;}}
+.donut-legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:14px;}
+.donut-legend-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-muted);}
+.donut-legend-swatch{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none;}
 .recent-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;
@@ -437,9 +443,9 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
 
 <nav id="tabbar">
   <button class="tab" data-tab="dashboard"><span class="tab-icon">📊</span><span>ภาพรวมแผนงาน</span></button>
-  <button class="tab" data-tab="registry"><span class="tab-icon">📁</span><span>ทะเบียนข้อเสนอโครงการ</span><span class="tab-count" id="tab-count">0</span></button>
-  <button class="tab" data-tab="budget"><span class="tab-icon">📈</span><span>วิเคราะห์จำแนกงบประมาณ</span></button>
-  <button class="tab" data-tab="strategy"><span class="tab-icon">🎯</span><span>สอดคล้องยุทธศาสตร์</span></button>
+  <button class="tab" data-tab="registry"><span class="tab-icon">📁</span><span>รายการเสนอโครงการทั้งหมด</span><span class="tab-count" id="tab-count">0</span></button>
+  <button class="tab" data-tab="budget"><span class="tab-icon">📈</span><span>วิเคราะห์งบประมาณ &amp; KPI</span></button>
+  <button class="tab" data-tab="strategy"><span class="tab-icon">🎯</span><span>การสอดคล้องยุทธศาสตร์</span></button>
 </nav>
 
 <main>
@@ -1225,6 +1231,37 @@ function renderBarChart(container, data, opts){
   container.innerHTML = svg;
 }
 
+function renderDonutChart(container, data, opts){
+  opts=opts||{};
+  var size=opts.size||220, thickness=opts.thickness||32;
+  var r=(size-thickness)/2;
+  var cx=size/2, cy=size/2;
+  var circumference=2*Math.PI*r;
+  var total=data.reduce(function(s,d){ return s+(d.value||0); },0);
+  var svg='<svg class="chart-svg" viewBox="0 0 '+size+' '+size+'" style="width:100%;max-width:230px;height:auto;display:block;margin:0 auto;">';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--border)" stroke-width="'+thickness+'"/>';
+  var offset=0;
+  if(total>0){
+    data.forEach(function(d){
+      var frac=(d.value||0)/total;
+      if(frac<=0) return;
+      var len=frac*circumference;
+      var gap=Math.max(0, circumference-len);
+      var rotate=-90+(offset/circumference)*360;
+      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+d.color+'" stroke-width="'+thickness+'" '+
+        'stroke-dasharray="'+len.toFixed(1)+' '+gap.toFixed(1)+'" transform="rotate('+rotate.toFixed(1)+' '+cx+' '+cy+')"/>';
+      offset+=len;
+    });
+  }
+  svg+='<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="24" font-weight="700" fill="var(--ink)">'+fmtInt(total)+'</text>';
+  svg+='<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="11" fill="var(--ink-muted)">โครงการทั้งหมด</text>';
+  svg+='</svg>';
+  var legend='<div class="donut-legend">'+data.map(function(d){
+    return '<span class="donut-legend-item"><span class="donut-legend-swatch" style="background:'+d.color+';"></span>'+esc(d.label)+' ('+fmtInt(d.value)+')</span>';
+  }).join("")+'</div>';
+  container.innerHTML = svg+legend;
+}
+
 /* ---- dashboard ---- */
 function renderDashboard(){
   var el=document.getElementById("view-dashboard");
@@ -1328,31 +1365,59 @@ function renderRegistry(){
 /* ---- budget breakdown analysis ---- */
 function renderBudgetAnalysis(){
   var el=document.getElementById("view-budget");
-  var totals={compensation:0,operating:0,materials:0,capital:0};
+
+  var catTotals={compensation:0,operating:0,materials:0,capital:0};
   proposals.forEach(function(p){
     (p.budgetItems||[]).forEach(function(it){
-      var cat = it.category && totals.hasOwnProperty(it.category) ? it.category : "operating";
-      totals[cat] += Number(it.amount)||0;
+      var cat = it.category && catTotals.hasOwnProperty(it.category) ? it.category : "operating";
+      catTotals[cat] += Number(it.amount)||0;
     });
   });
-  var grand = CATEGORY_ORDER.reduce(function(s,k){ return s+totals[k]; },0);
+  var catGrand = CATEGORY_ORDER.reduce(function(s,k){ return s+catTotals[k]; },0);
+
+  var deptTotals={}, deptOrder=[];
+  proposals.forEach(function(p){
+    var key = p.department || p.division || "ไม่ระบุหน่วยงาน";
+    if(!deptTotals.hasOwnProperty(key)){ deptTotals[key]=0; deptOrder.push(key); }
+    deptTotals[key] += budgetTotal(p);
+  });
+
+  var statusCounts={draft:0,submitted:0,approved:0,revision:0};
+  proposals.forEach(function(p){ statusCounts[p.status]=(statusCounts[p.status]||0)+1; });
 
   el.innerHTML =
-    '<div class="page-title">การวิเคราะห์สัดส่วนงบประมาณจำแนกตามรายจ่าย</div>'+
-    '<div class="page-sub">สรุปการจัดสรรงบประมาณตามหมวด ค่าตอบแทน ค่าใช้สอย ค่าวัสดุ ค่าครุภัณฑ์/สิ่งก่อสร้าง จากโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="page-title">วิเคราะห์งบประมาณ &amp; KPI</div>'+
+    '<div class="page-sub">สรุปงบประมาณและสถานะการพิจารณาโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="panel-row" style="margin-bottom:16px;">'+
+      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามกลุ่มงาน/หน่วยงาน</h3><div id="dept-chart"></div></div>'+
+      '<div class="panel"><h3 class="panel-title">สัดส่วนสถานะการพิจารณาโครงการ</h3><div id="status-donut"></div></div>'+
+    '</div>'+
     '<div class="stats cat-stats">'+
       CATEGORY_ORDER.map(function(k){
-        return '<div class="stat-tile '+CATEGORY_META[k].cls+'"><div class="label">'+CATEGORY_META[k].label+'</div><div class="value num">฿'+fmtInt(totals[k])+'</div></div>';
+        return '<div class="stat-tile '+CATEGORY_META[k].cls+'"><div class="label">'+CATEGORY_META[k].label+'</div><div class="value num">฿'+fmtInt(catTotals[k])+'</div></div>';
       }).join("")+
     '</div>'+
-    '<div class="panel"><div id="budget-chart"></div></div>';
+    '<div class="panel"><h3 class="panel-title">สรุปค่าใช้จ่ายแยกตามหมวดงบประมาณ</h3><div id="budget-chart"></div></div>';
+
+  var deptEl=document.getElementById("dept-chart");
+  if(deptOrder.length===0){
+    deptEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลโครงการ</div>';
+  } else {
+    renderBarChart(deptEl, deptOrder.map(function(k){
+      return {label:k, value:deptTotals[k], color:"var(--status-submitted)"};
+    }));
+  }
+
+  renderDonutChart(document.getElementById("status-donut"), Object.keys(STATUS_META).map(function(k){
+    return {label:STATUS_META[k].label, value:statusCounts[k]||0, color:"var(--status-"+k+")"};
+  }));
 
   var chartEl=document.getElementById("budget-chart");
-  if(grand<=0){
+  if(catGrand<=0){
     chartEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลงบประมาณให้วิเคราะห์</div>';
   } else {
     renderBarChart(chartEl, CATEGORY_ORDER.map(function(k){
-      return {label:CATEGORY_META[k].label, value:totals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
+      return {label:CATEGORY_META[k].label, value:catTotals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
     }));
   }
 }
