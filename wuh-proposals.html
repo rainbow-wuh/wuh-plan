@@ -1,0 +1,1391 @@
+<title>ระบบเสนอโครงการ WUH</title>
+<style>
+:root{
+  --bg:#F6F4EF;
+  --surface:#FFFFFF;
+  --surface-alt:#EFEBE1;
+  --border:#E0DACB;
+  --ink:#26241E;
+  --ink-muted:#726C5C;
+  --accent:#5B3E78;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#ECE3F3;
+  --navy:#1F3A54;
+  --navy-ink:#FFFFFF;
+  --status-draft:#8A8577;
+  --status-draft-soft:#EEECE6;
+  --status-submitted:#2B6CB0;
+  --status-submitted-soft:#E3EDF7;
+  --status-approved:#2F7A4F;
+  --status-approved-soft:#E3F1E8;
+  --status-revision:#B7791F;
+  --status-revision-soft:#F8EEDD;
+  --danger:#B23B3B;
+  --danger-soft:#F8E7E7;
+  --shadow:0 1px 2px rgba(38,36,30,0.06),0 4px 14px rgba(38,36,30,0.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1A1815;
+    --surface:#242119;
+    --surface-alt:#2B2820;
+    --border:#3D392C;
+    --ink:#EEE9DD;
+    --ink-muted:#A79F8B;
+    --accent:#B593D6;
+    --accent-ink:#1A1522;
+    --accent-soft:#3A2F49;
+    --navy:#7EA6C9;
+    --navy-ink:#12202D;
+    --status-draft:#A9A190;
+    --status-draft-soft:#332F26;
+    --status-submitted:#7BAEDE;
+    --status-submitted-soft:#22303F;
+    --status-approved:#7BC79A;
+    --status-approved-soft:#1F3327;
+    --status-revision:#E0AE5C;
+    --status-revision-soft:#3A2E17;
+    --danger:#E08787;
+    --danger-soft:#3A2222;
+    --shadow:0 1px 2px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1A1815;
+  --surface:#242119;
+  --surface-alt:#2B2820;
+  --border:#3D392C;
+  --ink:#EEE9DD;
+  --ink-muted:#A79F8B;
+  --accent:#B593D6;
+  --accent-ink:#1A1522;
+  --accent-soft:#3A2F49;
+  --navy:#7EA6C9;
+  --navy-ink:#12202D;
+  --status-draft:#A9A190;
+  --status-draft-soft:#332F26;
+  --status-submitted:#7BAEDE;
+  --status-submitted-soft:#22303F;
+  --status-approved:#7BC79A;
+  --status-approved-soft:#1F3327;
+  --status-revision:#E0AE5C;
+  --status-revision-soft:#3A2E17;
+  --danger:#E08787;
+  --danger-soft:#3A2222;
+  --shadow:0 1px 2px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.55;
+}
+h1,h2,h3,h4{text-wrap:balance;margin:0;}
+button{font-family:inherit;}
+.num{font-variant-numeric:tabular-nums;}
+::selection{background:var(--accent-soft);}
+a{color:var(--accent);}
+
+/* app shell */
+#topbar{
+  background:var(--accent);
+  color:var(--accent-ink);
+  padding:14px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+#topbar .brand{display:flex;flex-direction:column;gap:2px;}
+#topbar .brand .th{font-weight:700;font-size:19px;}
+#topbar .brand .en{font-size:12.5px;opacity:.85;letter-spacing:.02em;}
+#topbar .brand-mark{
+  display:flex;align-items:center;gap:12px;
+}
+#topbar .brand-mark .badge-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex:none;
+}
+#topbar .actions{display:flex;gap:8px;align-items:center;}
+#topbar button.ghost{
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.28);
+  color:var(--accent-ink);
+  padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;
+}
+#topbar button.ghost:hover{background:rgba(255,255,255,.24);}
+
+main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
+
+/* --------- list view --------- */
+#view-list .stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:22px;
+}
+.stat-tile{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 16px;
+  box-shadow:var(--shadow);
+}
+.stat-tile .label{font-size:12.5px;color:var(--ink-muted);letter-spacing:.03em;}
+.stat-tile .value{font-size:24px;font-weight:700;margin-top:4px;}
+.stat-tile .value.small{font-size:19px;}
+
+.toolbar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  margin-bottom:16px;
+}
+.toolbar input[type=search],.toolbar select{
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--ink);
+  border-radius:8px;
+  padding:9px 12px;
+  font-size:14px;
+  font-family:inherit;
+}
+.toolbar input[type=search]{flex:1 1 220px;min-width:180px;}
+.spacer{flex:1;}
+.btn-primary{
+  background:var(--accent);color:var(--accent-ink);border:none;
+  padding:10px 18px;border-radius:8px;font-weight:700;font-size:14.5px;cursor:pointer;
+}
+.btn-primary:hover{filter:brightness(1.08);}
+.btn-secondary{
+  background:var(--surface);color:var(--ink);border:1px solid var(--border);
+  padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;
+}
+.btn-secondary:hover{background:var(--surface-alt);}
+.btn-danger{
+  background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger);
+  padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;
+}
+
+#cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:14px;
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  display:flex;flex-direction:column;gap:10px;
+}
+.card:hover{border-color:var(--accent);}
+.card .top-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.card .name{font-weight:700;font-size:16.5px;line-height:1.35;}
+.card .dept{font-size:13px;color:var(--ink-muted);}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;font-weight:700;padding:4px 9px;border-radius:99px;white-space:nowrap;
+}
+.badge.status-draft{background:var(--status-draft-soft);color:var(--status-draft);}
+.badge.status-submitted{background:var(--status-submitted-soft);color:var(--status-submitted);}
+.badge.status-approved{background:var(--status-approved-soft);color:var(--status-approved);}
+.badge.status-revision{background:var(--status-revision-soft);color:var(--status-revision);}
+.badge.type-operational{background:var(--surface-alt);color:var(--ink-muted);}
+.badge.type-new1y{background:var(--accent-soft);color:var(--accent);}
+.badge.type-newspecial{background:var(--status-submitted-soft);color:var(--status-submitted);}
+.badge.example{background:var(--status-revision-soft);color:var(--status-revision);}
+.card .bottom-row{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;}
+.card .budget-label{font-size:11.5px;color:var(--ink-muted);}
+.card .budget-value{font-size:17px;font-weight:700;}
+.card .updated{font-size:12px;color:var(--ink-muted);}
+.card .tags{display:flex;flex-wrap:wrap;gap:6px;}
+.empty-state{
+  border:1px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;
+  color:var(--ink-muted);
+}
+
+/* --------- detail view --------- */
+#view-detail{display:none;}
+.detail-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.detail-head h2{font-size:21px;}
+.detail-head .sub{color:var(--ink-muted);font-size:13.5px;margin-top:3px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field-row.three{grid-template-columns:1fr 1fr 1fr;}
+.field-row.five{grid-template-columns:repeat(5,1fr);}
+@media (max-width:720px){
+  .field-row,.field-row.three,.field-row.five{grid-template-columns:1fr;}
+}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label{font-size:13px;font-weight:600;color:var(--ink-muted);}
+.field .hint{font-size:11.5px;color:var(--ink-muted);font-weight:400;}
+input[type=text],input[type=number],input[type=date],textarea,select{
+  width:100%;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--ink);
+  border-radius:8px;
+  padding:9px 11px;
+  font-size:14.5px;
+  font-family:inherit;
+}
+textarea{resize:vertical;min-height:64px;line-height:1.5;}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+.section-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  margin-bottom:16px;
+  overflow:hidden;
+}
+.section-head{
+  background:var(--navy);color:var(--navy-ink);
+  padding:13px 18px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;
+  user-select:none;
+}
+.section-head .titles{display:flex;flex-direction:column;gap:1px;}
+.section-head .th-title{font-weight:700;font-size:15.5px;}
+.section-head .en-title{font-size:11.5px;opacity:.8;}
+.section-head .chev{transition:transform .15s ease;font-size:13px;}
+.section-card.collapsed .chev{transform:rotate(-90deg);}
+.section-body{padding:18px 20px;}
+.section-card.collapsed .section-body{display:none;}
+.note-red{color:var(--danger);font-weight:700;font-size:13px;}
+.type-options{display:flex;flex-direction:column;gap:10px;}
+.type-option{display:flex;align-items:flex-start;gap:9px;font-size:14px;}
+.type-option input{width:auto;margin-top:3px;flex:none;}
+.type-option .type-hint{display:block;color:var(--danger);font-size:12px;font-weight:600;margin-top:1px;}
+.pdca-flag{
+  display:inline-block;background:var(--status-revision-soft);color:var(--status-revision);
+  font-weight:700;padding:3px 10px;border-radius:6px;font-size:12.5px;margin-bottom:10px;
+}
+
+table.grid-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.grid-table th{
+  background:var(--surface-alt);color:var(--ink-muted);
+  text-align:left;font-size:12px;font-weight:700;letter-spacing:.02em;
+  padding:8px 8px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+table.grid-table td{padding:6px 6px;border-bottom:1px solid var(--border);vertical-align:top;}
+table.grid-table tr:nth-child(even) td{background:var(--surface-alt);}
+table.grid-table input,table.grid-table textarea,table.grid-table select{font-size:13.5px;padding:6px 8px;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;}
+.row-actions{display:flex;justify-content:flex-end;margin-top:8px;}
+.icon-btn{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  color:var(--ink-muted);width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1;
+}
+.icon-btn:hover{color:var(--danger);border-color:var(--danger);}
+.add-row-btn{
+  background:var(--accent-soft);color:var(--accent);border:1px solid transparent;
+  padding:7px 14px;border-radius:7px;font-size:13.5px;font-weight:700;cursor:pointer;
+}
+.checklist{display:flex;flex-direction:column;gap:6px;}
+.checklist .group-title{font-weight:700;font-size:14px;margin:10px 0 4px;color:var(--ink);}
+.check-item{display:flex;align-items:flex-start;gap:9px;font-size:14px;padding:4px 0;}
+.check-item input{width:auto;margin-top:3px;flex:none;}
+.check-item .id{font-weight:700;color:var(--accent);margin-right:4px;}
+.summary-line{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface-alt);border-radius:8px;padding:10px 14px;margin-top:10px;
+  font-size:14.5px;gap:12px;flex-wrap:wrap;
+}
+.summary-line .amount{font-weight:700;font-size:18px;}
+.summary-line .words{color:var(--ink-muted);font-size:13px;}
+
+.savebar{
+  position:sticky;bottom:0;background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:12px 20px;margin:0 -20px;
+  display:flex;gap:10px;justify-content:flex-end;align-items:center;
+  box-shadow:0 -4px 14px rgba(0,0,0,.05);
+}
+.savebar .save-hint{margin-right:auto;font-size:12.5px;color:var(--ink-muted);}
+
+.section-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+.section-nav button{
+  background:var(--surface);border:1px solid var(--border);color:var(--ink-muted);
+  font-size:12px;padding:5px 10px;border-radius:99px;cursor:pointer;font-weight:600;
+}
+.section-nav button:hover{border-color:var(--accent);color:var(--accent);}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,18,14,.45);
+  display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;
+}
+.modal{
+  background:var(--surface);border-radius:12px;padding:22px;max-width:380px;width:100%;
+  box-shadow:0 10px 40px rgba(0,0,0,.25);
+}
+.modal h3{font-size:16.5px;margin-bottom:8px;}
+.modal p{font-size:14px;color:var(--ink-muted);margin:0 0 18px;}
+.modal .row{display:flex;gap:10px;justify-content:flex-end;}
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;
+  font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:60;
+  opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+.offline-note{
+  background:var(--status-revision-soft);color:var(--status-revision);
+  border:1px solid var(--status-revision);border-radius:8px;padding:9px 14px;
+  font-size:13px;margin-bottom:16px;
+}
+@media print{
+  #topbar,.toolbar,.savebar,.section-nav,.icon-btn,.add-row-btn,#view-list{display:none !important;}
+  body{background:#fff;color:#000;}
+  .section-card{box-shadow:none;border:1px solid #999;break-inside:avoid;}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+
+<div id="topbar">
+  <div class="brand-mark">
+    <div class="badge-icon">🏥</div>
+    <div class="brand">
+      <div class="th">ระบบเสนอโครงการและขออนุมัติงบประมาณ</div>
+      <div class="en">Walailak University Hospital · Project &amp; Budget Proposals</div>
+    </div>
+  </div>
+  <div class="actions" id="topbar-actions"></div>
+</div>
+
+<main>
+  <div id="offline-note" class="offline-note" style="display:none;">
+    หน้านี้กำลังแสดงข้อมูลตัวอย่างในเครื่องเท่านั้น การแก้ไขจะไม่ถูกบันทึกแบบเรียลไทม์ — เปิดผ่านลิงก์ที่เผยแพร่บน claude.ai เพื่อบันทึกและแชร์ข้อมูลกับทีม
+  </div>
+  <section id="view-list">
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input type="search" id="search-input" placeholder="ค้นหาชื่อโครงการ / หน่วยงาน…">
+      <select id="filter-status">
+        <option value="">สถานะทั้งหมด</option>
+        <option value="draft">ร่างโครงการ</option>
+        <option value="submitted">เสนอขออนุมัติ</option>
+        <option value="approved">อนุมัติแล้ว</option>
+        <option value="revision">ให้ปรับปรุง</option>
+      </select>
+      <select id="filter-type">
+        <option value="">ประเภททั้งหมด</option>
+        <option value="operational">งาน/กิจกรรม/โครงการประจำ</option>
+        <option value="new1y">โครงการใหม่ ระยะเวลา 1 ปี</option>
+        <option value="newspecial">โครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn-primary" id="btn-new">+ เสนอโครงการใหม่</button>
+    </div>
+    <div id="cards"></div>
+  </section>
+
+  <section id="view-detail"></section>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+var STRATEGIES = {
+  university: [
+    { code:"ยุทธศาสตร์ที่ 4", title:"การพัฒนาโรงพยาบาลศูนย์การแพทย์ให้เป็นโรงพยาบาลระดับตติยภูมิที่เป็นเลิศ",
+      kpis:[
+        {id:"WU4-1",label:"คุณภาพและขีดความสามารถบริการทางการแพทย์เฉพาะทาง"},
+        {id:"WU4-2",label:"ความพึงพอใจของผู้รับบริการ"},
+        {id:"WU4-3",label:"มาตรฐานคุณภาพโรงพยาบาล (HA)"},
+        {id:"WU4-4",label:"การพัฒนาศักยภาพบุคลากรทางการแพทย์"},
+        {id:"WU4-5",label:"รายได้จากบริการทางการแพทย์เฉพาะทาง"}
+      ],
+      measures:[
+        {id:"มาตรการที่ 1",label:"พัฒนาคลินิกพรีเมียม (Premium Clinic)"},
+        {id:"มาตรการที่ 2",label:"สร้างภาพลักษณ์และความเชื่อมั่นของโรงพยาบาล"},
+        {id:"มาตรการที่ 3",label:"พัฒนา Smart Hospital และนวัตกรรมดิจิทัล"},
+        {id:"มาตรการที่ 4",label:"ขยายบริการการแพทย์ทางไกล (Telehealth)"},
+        {id:"มาตรการที่ 5",label:"ยกระดับคุณภาพตามมาตรฐาน HA และระบบเทคโนโลยีสารสนเทศ"}
+      ]
+    },
+    { code:"ยุทธศาสตร์ที่ 5", title:"การเพิ่มความเข้มแข็งและความมั่นคงทางการเงินของมหาวิทยาลัย",
+      kpis:[
+        {id:"WU5-1",label:"รายได้รวมของศูนย์การแพทย์"},
+        {id:"WU5-2",label:"สัดส่วนรายได้ต่อค่าใช้จ่ายดำเนินงาน"}
+      ],
+      measures:[
+        {id:"มาตรการที่ 6",label:"พัฒนาบริการและช่องทางสร้างรายได้ใหม่"},
+        {id:"มาตรการที่ 7",label:"บริหารต้นทุนและทรัพยากรอย่างมีประสิทธิภาพ"}
+      ]
+    }
+  ],
+  hospital: [
+    {id:"WUH-1",label:"มุ่งพัฒนาสู่การเป็นโรงพยาบาลระดับตติยภูมิ/เฉพาะทาง"},
+    {id:"WUH-2",label:"พัฒนาระบบคุณภาพและความปลอดภัยของผู้ป่วย"},
+    {id:"WUH-3",label:"เป็นศูนย์กลางการเรียนรู้ด้านการแพทย์และสุขภาพของภาคใต้"},
+    {id:"WUH-4",label:"ขับเคลื่อนสู่ Smart Hospital ด้วยเทคโนโลยีดิจิทัล"}
+  ]
+};
+
+var RISK_CATEGORIES = [
+  "ด้านงบประมาณและการเงิน",
+  "ด้านการดำเนินงาน/ระยะเวลา",
+  "ด้านกฎระเบียบ ข้อกฎหมาย",
+  "ด้านระบบ/เทคโนโลยีสารสนเทศ"
+];
+
+var SCENARIO_ROWS = [
+  {key:"overview",label:"ภาพรวมสถานการณ์โครงการ",type:"text"},
+  {key:"patients",label:"จำนวนผู้รับบริการ (ต่อปี)",type:"number"},
+  {key:"totalCost",label:"ต้นทุนรวม (บาท)",type:"currency"},
+  {key:"totalRevenue",label:"รายได้รวม (บาท)",type:"currency"},
+  {key:"netIncome",label:"รายได้/กำไรสุทธิ (บาท)",type:"currency"}
+];
+
+var STATUS_META = {
+  draft:{label:"ร่างโครงการ",cls:"status-draft"},
+  submitted:{label:"เสนอขออนุมัติ",cls:"status-submitted"},
+  approved:{label:"อนุมัติแล้ว",cls:"status-approved"},
+  revision:{label:"ให้ปรับปรุง",cls:"status-revision"}
+};
+
+var TARGET_UNIT_LABEL = {day:"ต่อวัน",month:"ต่อเดือน",year:"ต่อปี"};
+
+var TYPE_META = {
+  operational:{label:"งาน/กิจกรรม/โครงการประจำ",hint:"(กรอกข้อมูลข้อ 1-6)",cls:"type-operational"},
+  new1y:{label:"โครงการใหม่ ระยะเวลา 1 ปี",hint:"(กรอกข้อมูลข้อ 1-9)",cls:"type-new1y"},
+  newspecial:{label:"โครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี",hint:"(กรอกข้อมูลข้อ 1-10)",cls:"type-newspecial"}
+};
+
+function uid(){ return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function emptyProposal(){
+  return {
+    id:null, isExample:false,
+    division:"", department:"", type:"new1y", status:"draft", docCode:"",
+    name:"",
+    strategies:{ university:{}, hospital:[] },
+    rationale:"", objectives:"",
+    targetGroup:"", targetQty:"", targetUnit:"month",
+    mainActivities:"",
+    workSteps:[ {period:"",activity:"",responsible:"",note:""} ],
+    costStructure:{ compensation:0, operating:0, materials:0, capital:0 },
+    financial:{ initialInvestment:0, revenueExpense:0, npv:0, irr:0, payback:0 },
+    qualitative:{ safety:"", morale:"" },
+    outputs:"", outcomes:"",
+    fundCode:"E2200001", orgCode:"758200", programCode:"", accountCode:"BO-03000000", fundingSource:"F20000",
+    budgetItems:[ {item:"",amount:0} ],
+    scenario:{ worst:{}, likely:{}, best:{} },
+    risks: RISK_CATEGORIES.map(function(c){ return {category:c,event:"",impact:"",likelihood:"กลาง",mitigation:""}; }),
+    actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""} ],
+    signatory:{ name:"", position:"", date:"" },
+    createdAt:null, updatedAt:null
+  };
+}
+
+/* ---- Thai baht text ---- */
+var TH_DIGIT=["","หนึ่ง","สอง","สาม","สี่","ห้า","หก","เจ็ด","แปด","เก้า"];
+var TH_PLACE=["","สิบ","ร้อย","พัน","หมื่น","แสน"];
+function thaiChunk(chunk){
+  chunk = chunk.replace(/^0+/,"");
+  if(chunk==="") return "";
+  var len=chunk.length, out="";
+  for(var i=0;i<len;i++){
+    var d=parseInt(chunk[i],10), place=len-i-1;
+    if(d===0) continue;
+    if(place===0){ out += (d===1 && len>1) ? "เอ็ด" : TH_DIGIT[d]; }
+    else if(place===1){ out += (d===1) ? "สิบ" : (d===2 ? "ยี่สิบ" : TH_DIGIT[d]+"สิบ"); }
+    else { out += TH_DIGIT[d]+TH_PLACE[place]; }
+  }
+  return out;
+}
+function thaiInt(numStr){
+  numStr = String(numStr).replace(/^0+/,"") || "0";
+  if(numStr==="0") return "ศูนย์";
+  var groups=[], s=numStr;
+  while(s.length>0){ groups.unshift(s.slice(-6)); s=s.slice(0,-6); }
+  var parts=[];
+  for(var g=0; g<groups.length; g++){
+    if(parseInt(groups[g],10)===0) continue;
+    var suffixCount = groups.length-1-g;
+    parts.push(thaiChunk(groups[g]) + "ล้าน".repeat(suffixCount));
+  }
+  return parts.join("");
+}
+function thaiBahtText(amount){
+  amount = Math.max(0, Number(amount)||0);
+  var fixed = amount.toFixed(2);
+  var bits = fixed.split(".");
+  var intPart = bits[0], satang = parseInt(bits[1],10);
+  var text = thaiInt(intPart) + "บาท";
+  text += satang===0 ? "ถ้วน" : (thaiChunk(String(satang)) + "สตางค์");
+  return text;
+}
+function fmtMoney(n){ return (Number(n)||0).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtInt(n){ return (Number(n)||0).toLocaleString("th-TH"); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function timeAgo(iso){
+  if(!iso) return "-";
+  var diff = Date.now() - new Date(iso).getTime();
+  var m = Math.floor(diff/60000);
+  if(m<1) return "เมื่อสักครู่";
+  if(m<60) return m+" นาทีที่แล้ว";
+  var h=Math.floor(m/60); if(h<24) return h+" ชั่วโมงที่แล้ว";
+  var d=Math.floor(h/24); if(d<30) return d+" วันที่แล้ว";
+  return new Date(iso).toLocaleDateString("th-TH");
+}
+function budgetTotal(p){ return (p.budgetItems||[]).reduce(function(s,it){ return s+(Number(it.amount)||0); },0); }
+
+/* ---- Excel template export ---- */
+var TEMPLATE_XLSX_B64 = "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";
+
+function b64ToArrayBuffer(b64){
+  var bin = atob(b64);
+  var len = bin.length;
+  var bytes = new Uint8Array(len);
+  for(var i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function xlText(ws, ref, text, align){
+  var cell = ws.getCell(ref);
+  cell.value = text==null ? "" : String(text);
+  cell.alignment = Object.assign({wrapText:true, vertical:"top", horizontal:"left"}, align||{});
+}
+function xlNum(ws, ref, value, numFmt){
+  var cell = ws.getCell(ref);
+  cell.value = Number(value)||0;
+  cell.numFmt = numFmt || "#,##0.00";
+  cell.alignment = {vertical:"middle", horizontal:"right"};
+}
+function xlMarkChecklist(ws, ref, fallback){
+  var cell = ws.getCell(ref);
+  var cur = cell.value ? String(cell.value) : fallback;
+  cell.value = cur.replace(/^\s*o\s*/, "☑ ");
+  cell.alignment = {wrapText:true, vertical:"top", horizontal:"left"};
+}
+function fitRow(ws, rowNum, text, charsPerLine, minHeight){
+  var t = String(text||"");
+  if(!t) return;
+  var explicitLines = t.split("\n").length;
+  var wrapLines = Math.ceil(t.length / Math.max(8, charsPerLine));
+  var lines = Math.max(explicitLines, wrapLines, 1);
+  var h = Math.max(minHeight||18, lines*16+8);
+  var row = ws.getRow(rowNum);
+  if(!row.height || row.height < h) row.height = h;
+}
+function fitMergeLastRow(ws, lastRowNum, text, charsPerLine){
+  var t = String(text||"");
+  if(!t) return;
+  var explicitLines = t.split("\n").length;
+  var wrapLines = Math.ceil(t.length / Math.max(8, charsPerLine));
+  var lines = Math.max(explicitLines, wrapLines, 1);
+  var extra = Math.max(0, (lines-1)*16);
+  if(extra>0){
+    var row = ws.getRow(lastRowNum);
+    row.height = Math.max(row.height||18, 18+extra);
+  }
+}
+
+async function exportProposalToExcel(p){
+  if(typeof ExcelJS === "undefined"){ toast("ไม่สามารถโหลดตัวสร้างไฟล์ Excel ได้ ลองใหม่อีกครั้ง"); return; }
+  var wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(b64ToArrayBuffer(TEMPLATE_XLSX_B64));
+  var ws = wb.worksheets[0];
+  var total = budgetTotal(p);
+
+  xlText(ws,"B6","แผนก "+(p.division||""));
+  xlText(ws,"D6","ฝ่าย "+(p.department||""));
+  xlText(ws,"G6","รหัสเอกสาร "+(p.docCode||"-")+"   |   สถานะ: "+(STATUS_META[p.status]||STATUS_META.draft).label);
+  var typeLabel = (TYPE_META[p.type]||TYPE_META.operational).label;
+  if(p.type==="operational"){ xlMarkChecklist(ws,"B7","o  โครงการประจำ"); xlText(ws,"D7","o โครงการใหม่ "); }
+  else { xlText(ws,"B7","o  โครงการประจำ"); xlMarkChecklist(ws,"D7","o โครงการใหม่ "); }
+  xlText(ws,"A7","ประเภทโครงการ: "+typeLabel+" "+(TYPE_META[p.type]||TYPE_META.operational).hint);
+  fitRow(ws, 7, typeLabel, 55, 18);
+
+  xlText(ws,"A10",p.name||"");
+  fitMergeLastRow(ws, 12, p.name, 90);
+
+  var hospRows = {"WUH-1":28,"WUH-2":29,"WUH-3":30,"WUH-4":31};
+  Object.keys(hospRows).forEach(function(id){
+    if((p.strategies.hospital||[]).indexOf(id)>-1) xlMarkChecklist(ws,"B"+hospRows[id],"");
+  });
+
+  xlText(ws,"A35",p.rationale||"");
+  fitMergeLastRow(ws, 37, p.rationale, 90);
+  xlText(ws,"A39",p.objectives||"");
+  fitMergeLastRow(ws, 41, p.objectives, 90);
+
+  xlText(ws,"B45",p.targetGroup||"");
+  fitRow(ws, 45, p.targetGroup, 40, 20);
+  xlText(ws,"F45","จำนวนเป้าหมาย: "+(p.targetQty||"-")+" "+(TARGET_UNIT_LABEL[p.targetUnit]||""));
+  xlText(ws,"A49",p.mainActivities||"");
+  fitRow(ws, 49, p.mainActivities, 90, 20);
+
+  (p.workSteps||[]).slice(0,3).forEach(function(s,i){
+    var r=56+i;
+    xlText(ws,"A"+r,s.period||""); xlText(ws,"B"+r,s.activity||""); xlText(ws,"F"+r,s.responsible||""); xlText(ws,"G"+r,s.note||"");
+    fitRow(ws, r, s.activity, 55, 20);
+  });
+
+  if(p.type==="new1y"||p.type==="newspecial"){
+    var cs=p.costStructure, fi=p.financial;
+    var costLine = "ค่าตอบแทน "+fmtMoney(cs.compensation)+" บาท, ค่าใช้สอย "+fmtMoney(cs.operating)+" บาท, ค่าวัสดุ "+fmtMoney(cs.materials)+" บาท, ค่าครุภัณฑ์ "+fmtMoney(cs.capital)+" บาท";
+    xlText(ws,"B61",costLine);
+    fitRow(ws, 61, costLine, 95, 20);
+    xlNum(ws,"D65",fi.initialInvestment);
+    xlNum(ws,"D66",fi.revenueExpense);
+    xlNum(ws,"D67",fi.npv);
+    xlText(ws,"D68",(fi.irr||0)+"%", {vertical:"middle", horizontal:"right", wrapText:false});
+    xlText(ws,"D69",(fi.payback||0)+" ปี", {vertical:"middle", horizontal:"right", wrapText:false});
+    xlText(ws,"B71",p.qualitative.safety||"");
+    fitRow(ws, 71, p.qualitative.safety, 95, 20);
+    xlText(ws,"B72",p.qualitative.morale||"");
+    fitRow(ws, 72, p.qualitative.morale, 95, 20);
+  }
+
+  xlText(ws,"A76",p.outputs||"");
+  fitRow(ws, 76, p.outputs, 120, 20);
+  xlText(ws,"A79",p.outcomes||"");
+  fitRow(ws, 79, p.outcomes, 120, 20);
+
+  var totalLine = "งบประมาณทั้งสิ้น จำนวน "+fmtMoney(total)+" บาท ("+thaiBahtText(total)+")";
+  xlText(ws,"A83",totalLine);
+  fitRow(ws, 83, totalLine, 120, 18);
+  xlText(ws,"A85","รหัสกองทุน "+(p.fundCode||"")+" หน่วยงาน "+(p.orgCode||"")+" แผนงาน "+(p.programCode||""));
+  xlText(ws,"A86","ผังบัญชี "+(p.accountCode||"")+" แหล่งเงิน "+(p.fundingSource||""));
+  (p.budgetItems||[]).slice(0,5).forEach(function(it,i){
+    var r=89+i;
+    xlText(ws,"A"+r,(i+1)+". "+(it.item||""));
+    xlNum(ws,"C"+r,it.amount);
+    fitRow(ws, r, it.item, 100, 18);
+  });
+
+  var scenarioRows={overview:99,patients:100,totalCost:101,totalRevenue:102,netIncome:103};
+  SCENARIO_ROWS.forEach(function(row){
+    var r=scenarioRows[row.key];
+    ["worst","likely","best"].forEach(function(col,idx){
+      var addr=(idx===0?"B":idx===1?"D":"E")+r;
+      var val=(p.scenario[col]&&p.scenario[col][row.key]!=null)?p.scenario[col][row.key]:(row.type==="text"?"":0);
+      if(row.type==="text"){ xlText(ws,addr,val); fitRow(ws, r, val, 30, 18); }
+      else { xlNum(ws,addr,val,"#,##0"); }
+    });
+  });
+
+  (p.risks||[]).slice(0,4).forEach(function(rk,i){
+    var r=107+i;
+    xlText(ws,"B"+r,rk.event||""); xlText(ws,"D"+r,rk.impact||"");
+    xlText(ws,"E"+r,rk.likelihood||"", {horizontal:"center"});
+    xlText(ws,"F"+r,rk.mitigation||"");
+    fitRow(ws, r, (rk.event||"")+" / "+(rk.mitigation||""), 55, 20);
+  });
+
+  (p.actionPlan||[]).slice(0,8).forEach(function(a,i){
+    var r=115+i;
+    xlText(ws,"A"+r,a.activity||""); xlText(ws,"B"+r,a.timeline||""); xlText(ws,"D"+r,a.kpi||"");
+    xlText(ws,"E"+r,a.budget||""); xlText(ws,"F"+r,a.link||""); xlText(ws,"G"+r,a.responsible||"");
+    fitRow(ws, r, a.activity, 35, 20);
+  });
+
+  var dateTxt = p.signatory.date || "";
+  var sigLine = "ชื่อ-สกุล "+(p.signatory.name||"")+"          ตำแหน่ง "+(p.signatory.position||"")+"          วันที่ "+dateTxt;
+  xlText(ws,"A124",sigLine);
+
+  var outBuf = await wb.xlsx.writeBuffer();
+  var blob = new Blob([outBuf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  var safeName = (p.name||"โครงการ").replace(/[\\\/:*?"<>|]/g,"").trim().slice(0,60) || "โครงการ";
+  return {blob:blob, filename: safeName + ".xlsx"};
+}
+
+async function downloadProposalExcel(p){
+  var built;
+  try{ built = await exportProposalToExcel(p); }
+  catch(err){ toast("สร้างไฟล์ไม่สำเร็จ: "+(err&&err.message?err.message:"unknown")); return; }
+  if(!built) return;
+  if(!(window.claude && window.claude.use)){ toast("ดาวน์โหลดได้เฉพาะเมื่อเปิดผ่านลิงก์ claude.ai"); return; }
+  window.claude.use("downloads").then(function(downloads){
+    if(!downloads){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); return; }
+    downloads.save({filename:built.filename, data:built.blob}).then(function(){
+      toast("บันทึกไฟล์ Excel เรียบร้อย");
+    }).catch(function(err){
+      if(err && err.code==="declined") return;
+      toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
+    });
+  }).catch(function(){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); });
+}
+
+/* ---- state ---- */
+var db=null, dbReady=false;
+var proposals=[]; // list snapshot
+var current=null; // proposal being edited
+var view="list";
+var unsubList=null;
+
+function toast(msg){
+  var t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove("show"); },2400);
+}
+
+function showModal(title,body,onConfirm,confirmLabel,danger){
+  var root=document.getElementById("modal-root");
+  root.innerHTML =
+    '<div class="modal-overlay" id="modal-ov"><div class="modal">'+
+    '<h3>'+esc(title)+'</h3><p>'+esc(body)+'</p>'+
+    '<div class="row"><button class="btn-secondary" id="modal-cancel">ยกเลิก</button>'+
+    '<button class="'+(danger?'btn-danger':'btn-primary')+'" id="modal-ok">'+esc(confirmLabel||"ยืนยัน")+'</button></div>'+
+    '</div></div>';
+  document.getElementById("modal-cancel").onclick=function(){ root.innerHTML=""; };
+  document.getElementById("modal-ov").onclick=function(e){ if(e.target.id==="modal-ov") root.innerHTML=""; };
+  document.getElementById("modal-ok").onclick=function(){ root.innerHTML=""; onConfirm(); };
+}
+
+/* ---- db bootstrap ---- */
+var LOCAL_KEY="wuh_proposals_local_v1";
+function loadLocal(){
+  try{ var raw=localStorage.getItem(LOCAL_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+}
+function saveLocal(list){
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); }catch(e){}
+}
+function exampleSeed(){
+  var a=emptyProposal();
+  a.id="example-new"; a.isExample=true;
+  a.division="ศัลยกรรม"; a.department="ฝ่ายบริการผู้ป่วยนอก";
+  a.type="new1y"; a.status="submitted"; a.docCode="Plan 2026:001";
+  a.name="โครงการคลินิกผ่าตัดวันเดียวกลับ (One Day Surgery)";
+  a.strategies.university["ยุทธศาสตร์ที่ 4"]={kpis:["WU4-1","WU4-5"],measures:["มาตรการที่ 1","มาตรการที่ 3"]};
+  a.strategies.hospital=["WUH-1","WUH-4"];
+  a.rationale="ผู้ป่วยที่รอผ่าตัดเล็กมีจำนวนมากและต้องรอเตียงนาน ส่งผลต่อความพึงพอใจและต้นทุนการนอนโรงพยาบาล";
+  a.objectives="เพื่อลดระยะเวลารอผ่าตัดและลดอัตราการครองเตียงโดยไม่จำเป็น พร้อมเพิ่มความสามารถในการให้บริการผ่าตัดเล็กต่อวัน";
+  a.targetGroup="ผู้ป่วยที่มีข้อบ่งชี้ผ่าตัดเล็ก-กลาง ไม่ซับซ้อน"; a.targetQty="15"; a.targetUnit="day";
+  a.mainActivities="จัดตั้งหน่วยผ่าตัดวันเดียวกลับ จัดทีมพยาบาลเฉพาะทาง จัดทำแนวทางคัดกรองผู้ป่วยและติดตามหลังผ่าตัด";
+  a.workSteps=[
+    {period:"ต.ค.–ธ.ค. 2568",activity:"จัดเตรียมพื้นที่และอุปกรณ์",responsible:"ฝ่ายวิศวกรรม/ศัลยกรรม",note:""},
+    {period:"ม.ค. 2569",activity:"อบรมทีมพยาบาลและแพทย์",responsible:"ฝ่ายพัฒนาบุคลากร",note:""},
+    {period:"ก.พ. 2569",activity:"เปิดให้บริการนำร่อง",responsible:"หัวหน้าศัลยกรรม",note:"ประเมินผล 3 เดือน"}
+  ];
+  a.costStructure={compensation:180000,operating:220000,materials:340000,capital:960000};
+  a.financial={initialInvestment:1700000,revenueExpense:650000,npv:1250000,irr:18.4,payback:2.7};
+  a.qualitative={safety:"ลดความเสี่ยงการติดเชื้อในโรงพยาบาลจากการนอนโรงพยาบาลนาน",morale:"เพิ่มภาพลักษณ์ด้านนวัตกรรมบริการของศูนย์การแพทย์"};
+  a.outputs="เปิดหน่วยผ่าตัดวันเดียวกลับ 1 หน่วย รองรับผู้ป่วย 15 รายต่อวัน";
+  a.outcomes="ลดวันนอนเฉลี่ยของผู้ป่วยผ่าตัดเล็กลงร้อยละ 40 ภายในปีแรก";
+  a.programCode="Z40101030-01";
+  a.budgetItems=[
+    {item:"ครุภัณฑ์ชุดผ่าตัดเล็กและเตียงพักฟื้น",amount:960000},
+    {item:"ปรับปรุงพื้นที่หน่วยผ่าตัด",amount:340000},
+    {item:"ค่าตอบแทนทีมปฏิบัติงานนอกเวลา",amount:180000},
+    {item:"วัสดุการแพทย์สำรองเริ่มต้น",amount:220000}
+  ];
+  a.scenario={
+    worst:{overview:"ผู้ป่วยใช้บริการต่ำกว่าคาด",patients:2800,totalCost:1900000,totalRevenue:2100000,netIncome:200000},
+    likely:{overview:"เป็นไปตามแผนที่ประมาณการ",patients:3900,totalCost:1900000,totalRevenue:3050000,netIncome:1150000},
+    best:{overview:"ผู้ป่วยใช้บริการสูงกว่าคาดจากการบอกต่อ",patients:4800,totalCost:2050000,totalRevenue:3800000,netIncome:1750000}
+  };
+  a.risks=[
+    {category:RISK_CATEGORIES[0],event:"งบลงทุนไม่เพียงพอ",impact:"ล่าช้าในการเปิดบริการ",likelihood:"กลาง",mitigation:"ทยอยจัดซื้อครุภัณฑ์ตามลำดับความจำเป็น"},
+    {category:RISK_CATEGORIES[1],event:"บุคลากรไม่เพียงพอ",impact:"ให้บริการได้น้อยกว่าแผน",likelihood:"กลาง",mitigation:"วางแผนอัตรากำลังและอบรมล่วงหน้า"},
+    {category:RISK_CATEGORIES[2],event:"ข้อกำหนดมาตรฐาน HA เปลี่ยนแปลง",impact:"ต้องปรับกระบวนการเพิ่มเติม",likelihood:"ต่ำ",mitigation:"ติดตามประกาศมาตรฐานอย่างต่อเนื่อง"},
+    {category:RISK_CATEGORIES[3],event:"ระบบบันทึกข้อมูลผู้ป่วยขัดข้อง",impact:"กระทบการติดตามหลังผ่าตัด",likelihood:"ต่ำ",mitigation:"สำรองระบบบันทึกกระดาษคู่ขนาน"}
+  ];
+  a.actionPlan=[
+    {activity:"จัดเตรียมพื้นที่และอุปกรณ์ (Plan)",timeline:"ต.ค.–ธ.ค. 2568",kpi:"พื้นที่พร้อมใช้งาน 100%",budget:"340,000",link:"WUH-1",responsible:"ฝ่ายวิศวกรรม"},
+    {activity:"อบรมทีมและทดลองระบบ (Do)",timeline:"ม.ค. 2569",kpi:"บุคลากรผ่านการอบรม 100%",budget:"180,000",link:"WUH-2",responsible:"ฝ่ายพัฒนาบุคลากร"},
+    {activity:"ประเมินผลนำร่อง (Check)",timeline:"ก.พ.–เม.ย. 2569",kpi:"วันนอนเฉลี่ยลดลง ≥20%",budget:"-",link:"WUH-4",responsible:"หัวหน้าศัลยกรรม"},
+    {activity:"ขยายผลและปรับปรุง (Act)",timeline:"พ.ค. 2569",kpi:"เปิดบริการเต็มรูปแบบ",budget:"-",link:"WUH-1",responsible:"หัวหน้าศัลยกรรม"}
+  ];
+  a.signatory={name:"นพ. สมชาย ใจดี",position:"หัวหน้าฝ่ายศัลยกรรม",date:"2025-09-01"};
+  var now=new Date(); now.setDate(now.getDate()-3);
+  a.createdAt=now.toISOString(); a.updatedAt=now.toISOString();
+
+  var b=emptyProposal();
+  b.id="example-regular"; b.isExample=true;
+  b.division="เภสัชกรรม"; b.department="ฝ่ายบริหารเวชภัณฑ์";
+  b.type="operational"; b.status="approved"; b.docCode="Plan 2026:002";
+  b.name="โครงการจัดหาระบบจ่ายยาอัตโนมัติประจำปี";
+  b.strategies.university["ยุทธศาสตร์ที่ 5"]={kpis:["WU5-2"],measures:["มาตรการที่ 7"]};
+  b.strategies.hospital=["WUH-2"];
+  b.rationale="ระบบจ่ายยาปัจจุบันใช้แรงงานคนเป็นหลัก เสี่ยงต่อความคลาดเคลื่อนในการจ่ายยา";
+  b.objectives="เพื่อลดอัตราความคลาดเคลื่อนในการจ่ายยาและเพิ่มความเร็วในการให้บริการผู้ป่วยนอก";
+  b.targetGroup="ผู้ป่วยนอกที่รับยาที่ห้องยา OPD"; b.targetQty="1200"; b.targetUnit="day";
+  b.mainActivities="บำรุงรักษาและต่ออายุสัญญาระบบจ่ายยาอัตโนมัติประจำปี พร้อมอบรมเจ้าหน้าที่";
+  b.workSteps=[{period:"ตลอดปีงบประมาณ",activity:"บำรุงรักษาเชิงป้องกันรายไตรมาส",responsible:"ฝ่ายเภสัชกรรม",note:""}];
+  b.outputs="ระบบจ่ายยาอัตโนมัติพร้อมใช้งานตลอดปี"; b.outcomes="อัตราความคลาดเคลื่อนในการจ่ายยาต่ำกว่า 0.1%";
+  b.programCode="Z40101030-02";
+  b.budgetItems=[{item:"ค่าบำรุงรักษาระบบจ่ายยาอัตโนมัติรายปี",amount:480000},{item:"วัสดุสิ้นเปลืองสำหรับระบบ",amount:95000}];
+  b.risks=RISK_CATEGORIES.map(function(c){return {category:c,event:"",impact:"",likelihood:"ต่ำ",mitigation:""};});
+  b.actionPlan=[{activity:"ต่อสัญญาบำรุงรักษา (Plan)",timeline:"ต.ค. 2568",kpi:"ลงนามสัญญาทันกำหนด",budget:"480,000",link:"WUH-2",responsible:"หัวหน้าเภสัชกรรม"}];
+  b.signatory={name:"ภญ. วราภรณ์ สุขใจ",position:"หัวหน้าฝ่ายเภสัชกรรม",date:"2025-08-20"};
+  var now2=new Date(); now2.setDate(now2.getDate()-12);
+  b.createdAt=now2.toISOString(); b.updatedAt=now2.toISOString();
+  return [a,b];
+}
+
+function renderTopbarActions(){
+  var el=document.getElementById("topbar-actions");
+  if(view==="list"){
+    el.innerHTML="";
+  } else {
+    el.innerHTML='<button class="ghost" id="btn-back">← กลับสู่รายการโครงการ</button>';
+    document.getElementById("btn-back").onclick=function(){ goList(); };
+  }
+}
+
+function goList(){
+  view="list"; current=null;
+  document.getElementById("view-list").style.display="";
+  document.getElementById("view-detail").style.display="none";
+  renderTopbarActions();
+  renderList();
+}
+
+function goDetail(proposal){
+  view="detail"; current=proposal;
+  document.getElementById("view-list").style.display="none";
+  document.getElementById("view-detail").style.display="block";
+  renderTopbarActions();
+  renderDetail();
+}
+
+/* ---- list rendering ---- */
+function renderStats(){
+  var total=proposals.length;
+  var byStatus={draft:0,submitted:0,approved:0,revision:0};
+  var totalBudget=0;
+  proposals.forEach(function(p){ byStatus[p.status]=(byStatus[p.status]||0)+1; totalBudget+=budgetTotal(p); });
+  document.getElementById("stats").innerHTML =
+    '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(total)+'</div></div>'+
+    '<div class="stat-tile"><div class="label">งบประมาณรวมที่เสนอ</div><div class="value small num">'+fmtMoney(totalBudget)+' บาท</div></div>'+
+    '<div class="stat-tile"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
+    '<div class="stat-tile"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>';
+}
+
+function renderList(){
+  renderStats();
+  var q=(document.getElementById("search-input").value||"").trim().toLowerCase();
+  var fStatus=document.getElementById("filter-status").value;
+  var fType=document.getElementById("filter-type").value;
+  var list=proposals.filter(function(p){
+    if(fStatus && p.status!==fStatus) return false;
+    if(fType && p.type!==fType) return false;
+    if(q){
+      var hay=(p.name+" "+p.division+" "+p.department).toLowerCase();
+      if(hay.indexOf(q)===-1) return false;
+    }
+    return true;
+  }).sort(function(a,b){ return (b.updatedAt||"").localeCompare(a.updatedAt||""); });
+
+  var cards=document.getElementById("cards");
+  if(list.length===0){
+    cards.innerHTML='<div class="empty-state" style="grid-column:1/-1;">ยังไม่พบโครงการที่ตรงกับเงื่อนไข ลองล้างตัวกรอง หรือกด “เสนอโครงการใหม่”</div>';
+    return;
+  }
+  cards.innerHTML = list.map(function(p){
+    var st=STATUS_META[p.status]||STATUS_META.draft;
+    return '<div class="card" data-id="'+esc(p.id)+'">'+
+      '<div class="top-row">'+
+        '<div><div class="name">'+esc(p.name||"(ยังไม่ระบุชื่อโครงการ)")+'</div>'+
+        '<div class="dept">'+esc(p.division||"-")+' · '+esc(p.department||"-")+'</div></div>'+
+        '<span class="badge '+st.cls+'">'+st.label+'</span>'+
+      '</div>'+
+      '<div class="tags">'+
+        '<span class="badge '+(TYPE_META[p.type]||TYPE_META.operational).cls+'">'+(TYPE_META[p.type]||TYPE_META.operational).label+'</span>'+
+        (p.isExample?'<span class="badge example">ตัวอย่าง</span>':'')+
+      '</div>'+
+      '<div class="bottom-row">'+
+        '<div><div class="budget-label">งบประมาณรวม</div><div class="budget-value num">'+fmtMoney(budgetTotal(p))+' บาท</div></div>'+
+        '<div class="updated">แก้ไขล่าสุด '+timeAgo(p.updatedAt)+'</div>'+
+      '</div>'+
+      '<div class="row-actions" style="margin-top:0;"><button class="icon-btn" data-download="'+esc(p.id)+'" title="ดาวน์โหลด Excel" style="width:auto;padding:5px 10px;">⇩ Excel</button></div>'+
+    '</div>';
+  }).join("");
+  Array.prototype.forEach.call(cards.querySelectorAll(".card"), function(el){
+    el.onclick=function(){
+      var p=proposals.find(function(x){ return x.id===el.getAttribute("data-id"); });
+      if(p) goDetail(JSON.parse(JSON.stringify(p)));
+    };
+  });
+  Array.prototype.forEach.call(cards.querySelectorAll("[data-download]"), function(btn){
+    btn.onclick=function(e){
+      e.stopPropagation();
+      var p=proposals.find(function(x){ return x.id===btn.getAttribute("data-download"); });
+      if(p) downloadProposalExcel(p);
+    };
+  });
+}
+
+/* ---- detail rendering ---- */
+function sectionHead(num, th, en){
+  return '<div class="section-head" data-toggle="'+num+'"><div class="titles">'+
+    '<div class="th-title">'+num+'. '+esc(th)+'</div><div class="en-title">'+esc(en)+'</div></div>'+
+    '<div class="chev">▾</div></div>';
+}
+
+function fieldHTML(id,label,hint,inputHTML){
+  return '<div class="field"><label for="'+id+'">'+esc(label)+(hint?' <span class="hint">'+esc(hint)+'</span>':'')+'</label>'+inputHTML+'</div>';
+}
+
+function renderDetail(){
+  var root=document.getElementById("view-detail");
+  var p=current;
+  var isNew=!p.id;
+  root.innerHTML =
+    '<div class="detail-head"><div>'+
+      '<h2>'+(isNew?"เสนอโครงการใหม่":esc(p.name||"แก้ไขโครงการ"))+'</h2>'+
+      '<div class="sub">'+(p.docCode?esc(p.docCode)+" · ":"")+'แบบเสนอโครงการและขออนุมัติงบประมาณ</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;">'+
+      '<button class="btn-secondary" id="btn-download">⇩ ดาวน์โหลด Excel</button>'+
+      (isNew?'':'<button class="btn-danger" id="btn-delete">ลบโครงการ</button>')+
+    '</div></div>'+
+    '<div class="section-nav" id="section-nav"></div>'+
+    '<div id="sections"></div>'+
+    '<div class="savebar"><span class="save-hint" id="save-hint"></span>'+
+      '<button class="btn-secondary" id="btn-cancel">ยกเลิก</button>'+
+      '<button class="btn-primary" id="btn-save">บันทึกโครงการ</button>'+
+    '</div>';
+
+  var sections=[
+    {num:"·",th:"ข้อมูลหน่วยงานและประเภทโครงการ",en:"Department & project type",render:renderHeaderSection},
+    {num:1,th:"ชื่อโครงการ",en:"Project name",render:renderNameSection},
+    {num:2,th:"ความเชื่อมโยงยุทธศาสตร์",en:"Strategic alignment",render:renderStrategySection},
+    {num:3,th:"หลักการ เหตุผล และวัตถุประสงค์",en:"Rationale & objectives",render:renderRationaleSection},
+    {num:4,th:"รูปแบบและแผนการดำเนินงาน",en:"Implementation plan",render:renderImplementationSection},
+    {num:5,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,onlyNew:true},
+    {num:6,th:"ผลสัมฤทธิ์ของโครงการ / ตัวชี้วัดความสำเร็จ",en:"Outcomes & KPIs",render:renderOutcomesSection},
+    {num:7,th:"รายละเอียดงบประมาณโครงการ",en:"Budget details",render:renderBudgetSection},
+    {num:8,th:"การประเมินแบบ Realistic Scenario",en:"Scenario planning",render:renderScenarioSection},
+    {num:9,th:"แผนบริหารความเสี่ยง",en:"Risk management",render:renderRiskSection},
+    {num:10,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
+    {num:11,th:"ผู้เสนอโครงการ",en:"Proposer sign-off",render:renderSignatorySection}
+  ];
+
+  var wrap=document.getElementById("sections");
+  var nav=document.getElementById("section-nav");
+  var isNewType = (p.type==="new1y"||p.type==="newspecial");
+  sections.forEach(function(s){
+    var card=document.createElement("div");
+    card.className="section-card";
+    card.id="sec-"+s.num;
+    if(s.onlyNew && !isNewType) card.style.display="none";
+    card.innerHTML = sectionHead(s.num,s.th,s.en) + '<div class="section-body"></div>';
+    wrap.appendChild(card);
+    s.render(card.querySelector(".section-body"), p);
+    card.querySelector(".section-head").onclick=function(){ card.classList.toggle("collapsed"); };
+
+    if(!(s.onlyNew && !isNewType)){
+      var navBtn=document.createElement("button");
+      navBtn.textContent=s.num+". "+s.th;
+      navBtn.onclick=function(){ card.classList.remove("collapsed"); card.scrollIntoView({behavior:"smooth",block:"start"}); };
+      nav.appendChild(navBtn);
+    }
+  });
+
+  document.getElementById("btn-cancel").onclick=function(){
+    showModal("ยกเลิกการแก้ไข","การเปลี่ยนแปลงที่ยังไม่บันทึกจะหายไป ยืนยันหรือไม่?",function(){ goList(); },"ยกเลิกการแก้ไข",true);
+  };
+  document.getElementById("btn-save").onclick=saveCurrent;
+  document.getElementById("btn-download").onclick=function(){ downloadProposalExcel(p); };
+  var delBtn=document.getElementById("btn-delete");
+  if(delBtn){
+    delBtn.onclick=function(){
+      showModal("ลบโครงการ",'ต้องการลบ "'+ (p.name||"โครงการนี้") +'" ใช่หรือไม่? การลบไม่สามารถย้อนกลับได้',function(){ deleteCurrent(); },"ลบโครงการ",true);
+    };
+  }
+}
+
+function renderHeaderSection(el,p){
+  el.innerHTML =
+    '<div class="field-row three">'+
+      fieldHTML("f-division","แผนก","",'<input type="text" id="f-division" value="'+esc(p.division)+'">')+
+      fieldHTML("f-department","ฝ่าย","",'<input type="text" id="f-department" value="'+esc(p.department)+'">')+
+      fieldHTML("f-doccode","รหัสเอกสาร","",'<input type="text" id="f-doccode" value="'+esc(p.docCode)+'" placeholder="Plan 2026:xxx">')+
+    '</div>'+
+    '<div class="field">'+
+      '<label>ประเภทโครงการ</label>'+
+      '<div class="type-options">'+
+        Object.keys(TYPE_META).map(function(k){
+          var t=TYPE_META[k];
+          return '<label class="type-option"><input type="radio" name="f-type" value="'+k+'"'+(p.type===k?" checked":"")+'>'+
+            '<span>'+esc(t.label)+'<span class="type-hint">'+esc(t.hint)+'</span></span></label>';
+        }).join("")+
+      '</div>'+
+    '</div>'+
+    '<div class="field-row">'+
+      fieldHTML("f-status","สถานะ","",
+        '<select id="f-status">'+Object.keys(STATUS_META).map(function(k){
+          return '<option value="'+k+'"'+(p.status===k?" selected":"")+'>'+STATUS_META[k].label+'</option>';
+        }).join("")+'</select>')+
+    '</div>';
+  bindText("f-division",p,"division"); bindText("f-department",p,"department"); bindText("f-doccode",p,"docCode");
+  Array.prototype.forEach.call(el.querySelectorAll('input[name="f-type"]'), function(radio){
+    radio.onchange=function(){
+      p.type=radio.value;
+      renderDetail();
+    };
+  });
+  document.getElementById("f-status").onchange=function(e){ p.status=e.target.value; };
+}
+
+function renderNameSection(el,p){
+  el.innerHTML = fieldHTML("f-name","ชื่อโครงการ","",'<textarea id="f-name" rows="2">'+esc(p.name)+'</textarea>');
+  bindText("f-name",p,"name");
+}
+
+function renderStrategySection(el,p){
+  var html='<div class="checklist">';
+  STRATEGIES.university.forEach(function(strat){
+    html += '<div class="group-title">'+esc(strat.code)+': '+esc(strat.title)+'</div>';
+    strat.kpis.forEach(function(k){
+      var checked = !!(p.strategies.university[strat.code] && (p.strategies.university[strat.code].kpis||[]).indexOf(k.id)>-1);
+      html += '<label class="check-item"><input type="checkbox" data-uni="'+esc(strat.code)+'" data-kind="kpis" data-id="'+esc(k.id)+'" '+(checked?"checked":"")+'><span><span class="id">'+esc(k.id)+'</span>'+esc(k.label)+'</span></label>';
+    });
+    strat.measures.forEach(function(m){
+      var checked = !!(p.strategies.university[strat.code] && (p.strategies.university[strat.code].measures||[]).indexOf(m.id)>-1);
+      html += '<label class="check-item"><input type="checkbox" data-uni="'+esc(strat.code)+'" data-kind="measures" data-id="'+esc(m.id)+'" '+(checked?"checked":"")+'><span><span class="id">'+esc(m.id)+'</span>'+esc(m.label)+'</span></label>';
+    });
+  });
+  html += '<div class="group-title">ยุทธศาสตร์ระดับโรงพยาบาล (Hospital-level)</div>';
+  STRATEGIES.hospital.forEach(function(h){
+    var checked = (p.strategies.hospital||[]).indexOf(h.id)>-1;
+    html += '<label class="check-item"><input type="checkbox" data-hosp="'+esc(h.id)+'" '+(checked?"checked":"")+'><span><span class="id">'+esc(h.id)+'</span>'+esc(h.label)+'</span></label>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll("input[data-uni]"), function(cb){
+    cb.onchange=function(){
+      var code=cb.getAttribute("data-uni"), kind=cb.getAttribute("data-kind"), id=cb.getAttribute("data-id");
+      if(!p.strategies.university[code]) p.strategies.university[code]={kpis:[],measures:[]};
+      var arr=p.strategies.university[code][kind]||(p.strategies.university[code][kind]=[]);
+      var idx=arr.indexOf(id);
+      if(cb.checked && idx===-1) arr.push(id);
+      if(!cb.checked && idx>-1) arr.splice(idx,1);
+    };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll("input[data-hosp]"), function(cb){
+    cb.onchange=function(){
+      var id=cb.getAttribute("data-hosp");
+      var arr=p.strategies.hospital||(p.strategies.hospital=[]);
+      var idx=arr.indexOf(id);
+      if(cb.checked && idx===-1) arr.push(id);
+      if(!cb.checked && idx>-1) arr.splice(idx,1);
+    };
+  });
+}
+
+function renderRationaleSection(el,p){
+  el.innerHTML =
+    fieldHTML("f-rationale","หลักการและเหตุผล / Pain Point","",'<textarea id="f-rationale" rows="3">'+esc(p.rationale)+'</textarea>')+
+    fieldHTML("f-objectives","วัตถุประสงค์โครงการ","",'<textarea id="f-objectives" rows="3">'+esc(p.objectives)+'</textarea>');
+  bindText("f-rationale",p,"rationale"); bindText("f-objectives",p,"objectives");
+}
+
+function renderImplementationSection(el,p){
+  el.innerHTML =
+    '<div class="field-row three">'+
+      fieldHTML("f-target","กลุ่มเป้าหมาย","",'<input type="text" id="f-target" value="'+esc(p.targetGroup)+'">')+
+      fieldHTML("f-targetqty","จำนวนเป้าหมาย","",'<input type="number" id="f-targetqty" value="'+esc(p.targetQty)+'">')+
+      fieldHTML("f-targetunit","หน่วย","",'<select id="f-targetunit"><option value="day"'+(p.targetUnit==="day"?" selected":"")+'>ต่อวัน</option><option value="month"'+(p.targetUnit==="month"?" selected":"")+'>ต่อเดือน</option><option value="year"'+(p.targetUnit==="year"?" selected":"")+'>ต่อปี</option></select>')+
+    '</div>'+
+    fieldHTML("f-activities","กิจกรรมหลักของโครงการ","",'<textarea id="f-activities" rows="3">'+esc(p.mainActivities)+'</textarea>')+
+    '<label style="font-size:13px;font-weight:600;color:var(--ink-muted);">ขั้นตอนการดำเนินงาน (สังเขป)</label>'+
+    '<div class="table-wrap" style="margin-top:6px;"><table class="grid-table"><thead><tr>'+
+      '<th style="width:16%">ระยะเวลา</th><th>กิจกรรมหลัก / ขั้นตอนการดำเนินงาน</th><th style="width:18%">ผู้รับผิดชอบ</th><th style="width:18%">หมายเหตุ</th><th style="width:36px"></th>'+
+    '</tr></thead><tbody id="worksteps-body"></tbody></table></div>'+
+    '<div class="row-actions"><button class="add-row-btn" id="add-workstep">+ เพิ่มขั้นตอน</button></div>';
+  bindText("f-target",p,"targetGroup"); bindText("f-targetqty",p,"targetQty");
+  document.getElementById("f-targetunit").onchange=function(e){ p.targetUnit=e.target.value; };
+  bindText("f-activities",p,"mainActivities");
+  renderArrayTable("worksteps-body",p.workSteps,[
+    {key:"period",type:"text"},{key:"activity",type:"text"},{key:"responsible",type:"text"},{key:"note",type:"text"}
+  ]);
+  document.getElementById("add-workstep").onclick=function(){
+    p.workSteps.push({period:"",activity:"",responsible:"",note:""});
+    renderArrayTable("worksteps-body",p.workSteps,[
+      {key:"period",type:"text"},{key:"activity",type:"text"},{key:"responsible",type:"text"},{key:"note",type:"text"}
+    ]);
+  };
+}
+
+function renderCostBenefitSection(el,p){
+  var cs=p.costStructure, fi=p.financial;
+  el.innerHTML =
+    '<div class="note-red">แสดงเฉพาะโครงการใหม่ (Strategic/Innovation)</div>'+
+    '<label style="font-size:13px;font-weight:600;color:var(--ink-muted);display:block;margin:10px 0 6px;">5.1 สรุปโครงสร้างต้นทุน (บาท)</label>'+
+    '<div class="field-row three">'+
+      fieldHTML("cs-comp","ค่าตอบแทน","",'<input type="number" id="cs-comp" value="'+cs.compensation+'">')+
+      fieldHTML("cs-op","ค่าใช้สอย","",'<input type="number" id="cs-op" value="'+cs.operating+'">')+
+      fieldHTML("cs-mat","ค่าวัสดุ","",'<input type="number" id="cs-mat" value="'+cs.materials+'">')+
+    '</div>'+
+    '<div class="field-row three">'+
+      fieldHTML("cs-cap","ค่าครุภัณฑ์","",'<input type="number" id="cs-cap" value="'+cs.capital+'">')+
+    '</div>'+
+    '<label style="font-size:13px;font-weight:600;color:var(--ink-muted);display:block;margin:14px 0 6px;">5.2 ความคุ้มค่าเชิงการเงิน</label>'+
+    '<div class="field-row five">'+
+      fieldHTML("fi-inv","ประเมินเงินลงทุนเริ่มต้น","บาท",'<input type="number" id="fi-inv" value="'+fi.initialInvestment+'">')+
+      fieldHTML("fi-rev","รายรับ-รายจ่ายสุทธิ/ปี","บาท",'<input type="number" id="fi-rev" value="'+fi.revenueExpense+'">')+
+      fieldHTML("fi-npv","มูลค่าปัจจุบันสุทธิ (NPV)","บาท",'<input type="number" id="fi-npv" value="'+fi.npv+'">')+
+      fieldHTML("fi-irr","อัตราผลตอบแทนภายใน (IRR)","%",'<input type="number" id="fi-irr" value="'+fi.irr+'">')+
+      fieldHTML("fi-pb","ระยะเวลาคืนทุน","ปี",'<input type="number" id="fi-pb" value="'+fi.payback+'">')+
+    '</div>'+
+    '<label style="font-size:13px;font-weight:600;color:var(--ink-muted);display:block;margin:14px 0 6px;">5.3 ความคุ้มค่าเชิงคุณภาพ</label>'+
+    fieldHTML("ql-safety","5.3.1 ด้านคุณภาพและความปลอดภัย","",'<textarea id="ql-safety" rows="2">'+esc(p.qualitative.safety)+'</textarea>')+
+    fieldHTML("ql-morale","5.3.2 ด้านภาพลักษณ์และขวัญกำลังใจ","",'<textarea id="ql-morale" rows="2">'+esc(p.qualitative.morale)+'</textarea>');
+  bindNum("cs-comp",cs,"compensation"); bindNum("cs-op",cs,"operating"); bindNum("cs-mat",cs,"materials"); bindNum("cs-cap",cs,"capital");
+  bindNum("fi-inv",fi,"initialInvestment"); bindNum("fi-rev",fi,"revenueExpense"); bindNum("fi-npv",fi,"npv"); bindNum("fi-irr",fi,"irr"); bindNum("fi-pb",fi,"payback");
+  bindText("ql-safety",p.qualitative,"safety"); bindText("ql-morale",p.qualitative,"morale");
+}
+
+function renderOutcomesSection(el,p){
+  el.innerHTML =
+    fieldHTML("f-outputs","6.1 ผลผลิต (Output)","",'<textarea id="f-outputs" rows="3">'+esc(p.outputs)+'</textarea>')+
+    fieldHTML("f-outcomes","6.2 ผลลัพธ์ (Outcome)","",'<textarea id="f-outcomes" rows="3">'+esc(p.outcomes)+'</textarea>');
+  bindText("f-outputs",p,"outputs"); bindText("f-outcomes",p,"outcomes");
+}
+
+function renderBudgetSection(el,p){
+  el.innerHTML =
+    '<div class="field-row five">'+
+      fieldHTML("b-fund","รหัสกองทุน","",'<input type="text" id="b-fund" value="'+esc(p.fundCode)+'">')+
+      fieldHTML("b-org","หน่วยงาน","",'<input type="text" id="b-org" value="'+esc(p.orgCode)+'">')+
+      fieldHTML("b-program","แผนงาน","",'<input type="text" id="b-program" value="'+esc(p.programCode)+'">')+
+      fieldHTML("b-account","ผังบัญชี","",'<input type="text" id="b-account" value="'+esc(p.accountCode)+'">')+
+      fieldHTML("b-source","แหล่งเงิน","",'<input type="text" id="b-source" value="'+esc(p.fundingSource)+'">')+
+    '</div>'+
+    '<div class="table-wrap"><table class="grid-table"><thead><tr><th>รายการ</th><th style="width:160px">งบประมาณ (บาท)</th><th style="width:36px"></th></tr></thead>'+
+    '<tbody id="budget-body"></tbody></table></div>'+
+    '<div class="row-actions"><button class="add-row-btn" id="add-budget">+ เพิ่มรายการ</button></div>'+
+    '<div class="summary-line"><div>งบประมาณทั้งสิ้น<div class="words" id="budget-words"></div></div>'+
+    '<div class="amount num" id="budget-total"></div></div>'+
+    '<div style="font-size:11.5px;color:var(--ink-muted);margin-top:6px;">*ถัวเฉลี่ยทุกรายการ</div>';
+  bindText("b-fund",p,"fundCode"); bindText("b-org",p,"orgCode"); bindText("b-program",p,"programCode");
+  bindText("b-account",p,"accountCode"); bindText("b-source",p,"fundingSource");
+  function refreshTotal(){
+    var t=budgetTotal(p);
+    document.getElementById("budget-total").textContent=fmtMoney(t)+" บาท";
+    document.getElementById("budget-words").textContent="("+thaiBahtText(t)+")";
+  }
+  function draw(){
+    renderArrayTable("budget-body",p.budgetItems,[{key:"item",type:"text"},{key:"amount",type:"number"}],refreshTotal);
+    refreshTotal();
+  }
+  draw();
+  document.getElementById("add-budget").onclick=function(){
+    p.budgetItems.push({item:"",amount:0});
+    draw();
+  };
+}
+
+function renderScenarioSection(el,p){
+  var cols=["worst","likely","best"];
+  var colLabels={worst:"Worst-Case (แย่ที่สุด)",likely:"Most Likely (เป็นไปได้ที่สุด)",best:"Best-Case (ดีที่สุด)"};
+  var html='<div class="table-wrap"><table class="grid-table"><thead><tr><th>ตัวแปรหลัก</th>'+
+    cols.map(function(c){ return '<th>'+colLabels[c]+'</th>'; }).join("")+'</tr></thead><tbody>';
+  SCENARIO_ROWS.forEach(function(row){
+    html+='<tr><td>'+esc(row.label)+'</td>';
+    cols.forEach(function(c){
+      var val=(p.scenario[c] && p.scenario[c][row.key]!=null)?p.scenario[c][row.key]:"";
+      var type = row.type==="text"?"text":"number";
+      html+='<td><input type="'+type+'" data-scn-col="'+c+'" data-scn-key="'+row.key+'" value="'+esc(val)+'"></td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+  Array.prototype.forEach.call(el.querySelectorAll("input[data-scn-col]"), function(inp){
+    inp.oninput=function(){
+      var c=inp.getAttribute("data-scn-col"), k=inp.getAttribute("data-scn-key");
+      if(!p.scenario[c]) p.scenario[c]={};
+      p.scenario[c][k]= inp.type==="number" ? (parseFloat(inp.value)||0) : inp.value;
+    };
+  });
+}
+
+function renderRiskSection(el,p){
+  var html='<div class="table-wrap"><table class="grid-table"><thead><tr>'+
+    '<th style="width:16%">ด้านความเสี่ยง</th><th>เหตุการณ์ความเสี่ยง</th><th>ผลกระทบ</th><th style="width:100px">โอกาสที่เกิด</th><th>มาตรการ/แนวทางป้องกัน</th></tr></thead><tbody>';
+  p.risks.forEach(function(r,i){
+    html+='<tr><td style="font-weight:600;">'+esc(r.category)+'</td>'+
+      '<td><input type="text" data-risk="'+i+'" data-key="event" value="'+esc(r.event)+'"></td>'+
+      '<td><input type="text" data-risk="'+i+'" data-key="impact" value="'+esc(r.impact)+'"></td>'+
+      '<td><select data-risk="'+i+'" data-key="likelihood">'+
+        ["ต่ำ","กลาง","สูง"].map(function(o){ return '<option value="'+o+'"'+(r.likelihood===o?" selected":"")+'>'+o+'</option>'; }).join("")+
+      '</select></td>'+
+      '<td><input type="text" data-risk="'+i+'" data-key="mitigation" value="'+esc(r.mitigation)+'"></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+  Array.prototype.forEach.call(el.querySelectorAll("[data-risk]"), function(inp){
+    inp.oninput=inp.onchange=function(){
+      var i=parseInt(inp.getAttribute("data-risk"),10), k=inp.getAttribute("data-key");
+      p.risks[i][k]=inp.value;
+    };
+  });
+}
+
+function renderActionSection(el,p){
+  el.innerHTML =
+    '<span class="pdca-flag">PDCA · Plan – Do – Check – Act</span>'+
+    '<div class="table-wrap"><table class="grid-table"><thead><tr>'+
+      '<th>ขั้นตอนกิจกรรม</th><th style="width:14%">ระยะเวลา</th><th style="width:16%">ตัวชี้วัด (KPI)</th><th style="width:12%">งบประมาณ</th><th style="width:10%">เชื่อมโยง</th><th style="width:14%">ผู้รับผิดชอบ</th><th style="width:36px"></th>'+
+    '</tr></thead><tbody id="action-body"></tbody></table></div>'+
+    '<div class="row-actions"><button class="add-row-btn" id="add-action">+ เพิ่มกิจกรรม</button></div>';
+  var cols=[{key:"activity",type:"text"},{key:"timeline",type:"text"},{key:"kpi",type:"text"},{key:"budget",type:"text"},{key:"link",type:"text"},{key:"responsible",type:"text"}];
+  renderArrayTable("action-body",p.actionPlan,cols);
+  document.getElementById("add-action").onclick=function(){
+    p.actionPlan.push({activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""});
+    renderArrayTable("action-body",p.actionPlan,cols);
+  };
+}
+
+function renderSignatorySection(el,p){
+  el.innerHTML =
+    '<div class="field-row three">'+
+      fieldHTML("s-name","ชื่อ-สกุล","",'<input type="text" id="s-name" value="'+esc(p.signatory.name)+'">')+
+      fieldHTML("s-position","ตำแหน่ง","",'<input type="text" id="s-position" value="'+esc(p.signatory.position)+'">')+
+      fieldHTML("s-date","วันที่เสนอ","",'<input type="date" id="s-date" value="'+esc(p.signatory.date)+'">')+
+    '</div>';
+  bindText("s-name",p.signatory,"name"); bindText("s-position",p.signatory,"position");
+  document.getElementById("s-date").onchange=function(e){ p.signatory.date=e.target.value; };
+}
+
+/* ---- generic bindings ---- */
+function bindText(id,obj,key){
+  var el=document.getElementById(id);
+  el.oninput=function(){ obj[key]=el.value; };
+}
+function bindNum(id,obj,key){
+  var el=document.getElementById(id);
+  el.oninput=function(){ obj[key]=parseFloat(el.value)||0; };
+}
+function renderArrayTable(tbodyId, arr, cols, onChange){
+  var tbody=document.getElementById(tbodyId);
+  tbody.innerHTML = arr.map(function(row,i){
+    return '<tr>'+cols.map(function(c){
+      var v=row[c.key]==null?"":row[c.key];
+      return '<td><input type="'+(c.type==="number"?"number":"text")+'" data-row="'+i+'" data-key="'+c.key+'" value="'+esc(v)+'"></td>';
+    }).join("")+'<td><button class="icon-btn" data-remove="'+i+'" title="ลบแถว">✕</button></td></tr>';
+  }).join("");
+  Array.prototype.forEach.call(tbody.querySelectorAll("input"), function(inp){
+    inp.oninput=function(){
+      var i=parseInt(inp.getAttribute("data-row"),10), k=inp.getAttribute("data-key");
+      var col=cols.find(function(c){ return c.key===k; });
+      arr[i][k] = col.type==="number" ? (parseFloat(inp.value)||0) : inp.value;
+      if(onChange) onChange();
+    };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-remove]"), function(btn){
+    btn.onclick=function(){
+      var i=parseInt(btn.getAttribute("data-remove"),10);
+      arr.splice(i,1);
+      renderArrayTable(tbodyId, arr, cols, onChange);
+      if(onChange) onChange();
+    };
+  });
+}
+
+/* ---- persistence ---- */
+function saveCurrent(){
+  var p=current;
+  if(!p.name || !p.name.trim()){ toast("กรุณาระบุชื่อโครงการก่อนบันทึก"); return; }
+  var now=new Date().toISOString();
+  p.updatedAt=now;
+  if(!p.createdAt) p.createdAt=now;
+  p.isExample=false;
+
+  if(db){
+    var ref = p.id ? db.collection("proposals").doc(p.id) : db.collection("proposals").doc();
+    if(!p.id) p.id=ref.id;
+    var data=JSON.parse(JSON.stringify(p));
+    ref.set(data).then(function(){
+      toast("บันทึกโครงการเรียบร้อย");
+      goList();
+    }).catch(function(err){
+      toast("บันทึกไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
+    });
+  } else {
+    if(!p.id) p.id=uid();
+    var idx=proposals.findIndex(function(x){ return x.id===p.id; });
+    if(idx>-1) proposals[idx]=p; else proposals.push(p);
+    saveLocal(proposals);
+    toast("บันทึกในเครื่องนี้แล้ว (โหมดออฟไลน์)");
+    goList();
+  }
+}
+
+function deleteCurrent(){
+  var p=current;
+  if(db){
+    db.collection("proposals").doc(p.id).delete().then(function(){
+      toast("ลบโครงการแล้ว");
+      goList();
+    }).catch(function(err){ toast("ลบไม่สำเร็จ: "+(err&&err.message?err.message:"unknown")); });
+  } else {
+    proposals=proposals.filter(function(x){ return x.id!==p.id; });
+    saveLocal(proposals);
+    toast("ลบโครงการแล้ว");
+    goList();
+  }
+}
+
+/* ---- boot ---- */
+function attachListListeners(){
+  document.getElementById("btn-new").onclick=function(){ goDetail(emptyProposal()); };
+  document.getElementById("search-input").oninput=function(){ renderList(); };
+  document.getElementById("filter-status").onchange=function(){ renderList(); };
+  document.getElementById("filter-type").onchange=function(){ renderList(); };
+}
+
+function boot(){
+  attachListListeners();
+  if(window.claude && window.claude.use){
+    window.claude.use("db").then(function(d){
+      if(d){
+        db=d; dbReady=true;
+        document.getElementById("offline-note").style.display="none";
+        db.collection("proposals").onSnapshot(function(snap){
+          proposals = snap.docs.map(function(doc){ return Object.assign({id:doc.id}, doc.data()); });
+          if(proposals.length===0){
+            var seed=exampleSeed();
+            seed.forEach(function(p){ db.collection("proposals").doc(p.id).set(p); });
+          } else if(view==="list"){
+            renderList();
+          }
+        }, function(err){
+          toast("การเชื่อมต่อฐานข้อมูลขัดข้อง: "+(err&&err.message?err.message:"unknown"));
+        });
+      } else {
+        initOffline();
+      }
+    }).catch(function(){ initOffline(); });
+    setTimeout(function(){ if(!dbReady && !proposals.length) initOffline(); }, 4500);
+  } else {
+    initOffline();
+  }
+}
+
+function initOffline(){
+  if(dbReady) return;
+  document.getElementById("offline-note").style.display="";
+  var local=loadLocal();
+  proposals = local && local.length ? local : exampleSeed();
+  if(!local) saveLocal(proposals);
+  renderList();
+}
+
+boot();
+renderList();
+})();
+</script>
