@@ -189,6 +189,21 @@ main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 .donut-legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:14px;}
 .donut-legend-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-muted);}
 .donut-legend-swatch{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none;}
+.chart-tooltip{
+  position:fixed;z-index:70;pointer-events:none;
+  background:var(--ink);color:var(--bg);
+  padding:7px 11px;border-radius:8px;font-size:12.5px;line-height:1.4;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:220px;
+}
+.chart-bar{transition:opacity .12s ease;}
+.chart-bar.chart-hot{opacity:.75;}
+.chart-bar-hitzone{cursor:default;}
+.chart-segment{transition:opacity .12s ease;}
+.chart-segment.chart-hot{opacity:.8;}
+.chart-clickable{cursor:pointer;}
+.chart-bar-hitzone.chart-clickable{cursor:pointer;}
+.donut-legend-item.chart-clickable{cursor:pointer;border-radius:6px;padding:2px 4px;margin:-2px -4px;}
+.donut-legend-item.chart-clickable:hover{background:var(--surface-alt);}
 .recent-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
   padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;
@@ -216,6 +231,8 @@ main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 .stat-tile .label{font-size:12.5px;color:var(--ink-muted);letter-spacing:.03em;}
 .stat-tile .value{font-size:24px;font-weight:700;margin-top:4px;}
 .stat-tile .value.small{font-size:19px;}
+.stat-tile-clickable{cursor:pointer;transition:border-color .12s ease,transform .12s ease;}
+.stat-tile-clickable:hover{border-color:var(--accent);transform:translateY(-1px);}
 
 .toolbar{
   display:flex;gap:10px;flex-wrap:wrap;align-items:center;
@@ -488,6 +505,7 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
 
 <div id="modal-root"></div>
 <div id="toast" class="toast"></div>
+<div id="chart-tooltip" class="chart-tooltip" style="display:none;"></div>
 
 <script>
 (function(){
@@ -1176,6 +1194,21 @@ function switchTab(tab){
   renderShell();
 }
 
+function goRegistryFilteredByStatus(statusKey){
+  switchTab("registry");
+  document.getElementById("filter-status").value = statusKey;
+  document.getElementById("search-input").value = "";
+  renderRegistry();
+  toast("กรองตามสถานะ: "+(STATUS_META[statusKey]||{}).label);
+}
+function goRegistrySearch(term){
+  switchTab("registry");
+  document.getElementById("filter-status").value = "";
+  document.getElementById("search-input").value = term;
+  renderRegistry();
+  toast("ค้นหา: "+term);
+}
+
 function goDetail(proposal){
   view="detail"; current=proposal;
   renderShell();
@@ -1196,6 +1229,47 @@ function niceCeil(v){
   var niceF = f<=1?1:(f<=2?2:(f<=5?5:10));
   return niceF*base;
 }
+/* ---- shared chart tooltip ---- */
+function showChartTooltip(evt, html){
+  var tip=document.getElementById("chart-tooltip");
+  tip.innerHTML=html;
+  tip.style.display="block";
+  positionChartTooltip(evt);
+}
+function positionChartTooltip(evt){
+  var tip=document.getElementById("chart-tooltip");
+  var pad=14;
+  var x=evt.clientX+pad, y=evt.clientY+pad;
+  var tw=tip.offsetWidth, th=tip.offsetHeight;
+  if(x+tw>window.innerWidth-8) x=evt.clientX-tw-pad;
+  if(y+th>window.innerHeight-8) y=evt.clientY-th-pad;
+  tip.style.left=x+"px";
+  tip.style.top=y+"px";
+}
+function hideChartTooltip(){
+  document.getElementById("chart-tooltip").style.display="none";
+}
+function wireChartHover(container, selector, data, opts){
+  opts=opts||{};
+  var fmt = opts.tooltipValue || fmtInt;
+  Array.prototype.forEach.call(container.querySelectorAll(selector), function(el){
+    var idx=parseInt(el.getAttribute("data-idx"),10);
+    var d=data[idx];
+    if(!d) return;
+    var hot = opts.hotTarget ? opts.hotTarget(el) : el;
+    el.addEventListener("mouseenter", function(e){
+      showChartTooltip(e, '<strong>'+esc(d.full||d.label)+'</strong><br>'+fmt(d.value));
+      if(hot) hot.classList.add("chart-hot");
+    });
+    el.addEventListener("mousemove", positionChartTooltip);
+    el.addEventListener("mouseleave", function(){ hideChartTooltip(); if(hot) hot.classList.remove("chart-hot"); });
+    if(opts.onClick){
+      el.classList.add("chart-clickable");
+      el.addEventListener("click", function(){ hideChartTooltip(); opts.onClick(d); });
+    }
+  });
+}
+
 function renderBarChart(container, data, opts){
   opts=opts||{};
   var w=opts.width||640, h=opts.height||260;
@@ -1221,7 +1295,8 @@ function renderBarChart(container, data, opts){
     var bx=padL+i*slot+(slot-barW)/2;
     var bh=maxVal<=0?0:innerH*((d.value||0)/niceMax);
     var by=padT+innerH-bh;
-    svg+='<rect x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,bh).toFixed(1)+'" rx="4" fill="'+d.color+'"/>';
+    svg+='<rect class="chart-bar" data-idx="'+i+'" x="'+bx.toFixed(1)+'" y="'+by.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,bh).toFixed(1)+'" rx="4" fill="'+d.color+'"/>';
+    svg+='<rect class="chart-bar-hitzone" data-idx="'+i+'" x="'+bx.toFixed(1)+'" y="'+padT+'" width="'+barW.toFixed(1)+'" height="'+innerH+'" fill="transparent"/>';
     svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(h-padB+18)+'" text-anchor="middle" font-size="12" fill="var(--ink-muted)">'+esc(d.label)+'</text>';
     if(opts.showValue){
       svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(by-6).toFixed(1)+'" text-anchor="middle" font-size="11" fill="var(--ink)" font-weight="700">'+fmtInt(d.value)+'</text>';
@@ -1229,6 +1304,9 @@ function renderBarChart(container, data, opts){
   });
   svg+='</svg>';
   container.innerHTML = svg;
+  wireChartHover(container, ".chart-bar-hitzone", data, Object.assign({}, opts, {
+    hotTarget:function(el){ return el.previousElementSibling; }
+  }));
 }
 
 function renderDonutChart(container, data, opts){
@@ -1241,25 +1319,27 @@ function renderDonutChart(container, data, opts){
   var svg='<svg class="chart-svg" viewBox="0 0 '+size+' '+size+'" style="width:100%;max-width:230px;height:auto;display:block;margin:0 auto;">';
   svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--border)" stroke-width="'+thickness+'"/>';
   var offset=0;
-  if(total>0){
-    data.forEach(function(d){
-      var frac=(d.value||0)/total;
-      if(frac<=0) return;
-      var len=frac*circumference;
-      var gap=Math.max(0, circumference-len);
-      var rotate=-90+(offset/circumference)*360;
-      svg+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+d.color+'" stroke-width="'+thickness+'" '+
-        'stroke-dasharray="'+len.toFixed(1)+' '+gap.toFixed(1)+'" transform="rotate('+rotate.toFixed(1)+' '+cx+' '+cy+')"/>';
-      offset+=len;
-    });
-  }
+  data.forEach(function(d,i){
+    var frac=total>0 ? (d.value||0)/total : 0;
+    if(frac<=0) return;
+    var len=frac*circumference;
+    var gap=Math.max(0, circumference-len);
+    var rotate=-90+(offset/circumference)*360;
+    svg+='<circle class="chart-segment" data-idx="'+i+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+d.color+'" stroke-width="'+thickness+'" '+
+      'stroke-dasharray="'+len.toFixed(1)+' '+gap.toFixed(1)+'" transform="rotate('+rotate.toFixed(1)+' '+cx+' '+cy+')"/>';
+    offset+=len;
+  });
   svg+='<text x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="24" font-weight="700" fill="var(--ink)">'+fmtInt(total)+'</text>';
   svg+='<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="11" fill="var(--ink-muted)">โครงการทั้งหมด</text>';
   svg+='</svg>';
-  var legend='<div class="donut-legend">'+data.map(function(d){
-    return '<span class="donut-legend-item"><span class="donut-legend-swatch" style="background:'+d.color+';"></span>'+esc(d.label)+' ('+fmtInt(d.value)+')</span>';
+  var legend='<div class="donut-legend">'+data.map(function(d,i){
+    return '<span class="donut-legend-item'+(opts.onClick?' chart-clickable':'')+'" data-idx="'+i+'"><span class="donut-legend-swatch" style="background:'+d.color+';"></span>'+esc(d.label)+' ('+fmtInt(d.value)+')</span>';
   }).join("")+'</div>';
   container.innerHTML = svg+legend;
+  wireChartHover(container, ".chart-segment", data, opts);
+  wireChartHover(container, ".donut-legend-item", data, Object.assign({}, opts, {
+    hotTarget:function(el){ return container.querySelector('.chart-segment[data-idx="'+el.getAttribute("data-idx")+'"]'); }
+  }));
 }
 
 /* ---- dashboard ---- */
@@ -1276,15 +1356,20 @@ function renderDashboard(){
     '<div class="stats">'+
       '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(proposals.length)+'</div></div>'+
       '<div class="stat-tile"><div class="label">งบประมาณรวมที่เสนอ</div><div class="value small num">'+fmtMoney(totalBudget)+' บาท</div></div>'+
-      '<div class="stat-tile"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
-      '<div class="stat-tile"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>'+
+      '<div class="stat-tile stat-tile-clickable" data-status="submitted"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
+      '<div class="stat-tile stat-tile-clickable" data-status="approved"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>'+
     '</div>'+
     '<div class="panel"><h3 class="panel-title">จำนวนโครงการตามสถานะ</h3><div id="dash-status-chart"></div></div>'+
     '<div class="panel"><div class="panel-head"><h3 class="panel-title">โครงการล่าสุด</h3><button class="btn-secondary" id="dash-view-all">ดูทั้งหมด →</button></div><div id="dash-recent"></div></div>';
 
-  renderBarChart(document.getElementById("dash-status-chart"), Object.keys(STATUS_META).map(function(k){
-    return {label:STATUS_META[k].label, value:byStatus[k]||0, color:"var(--status-"+k+")"};
-  }), {showValue:true, integer:true});
+  Array.prototype.forEach.call(el.querySelectorAll(".stat-tile-clickable"), function(tile){
+    tile.onclick=function(){ goRegistryFilteredByStatus(tile.getAttribute("data-status")); };
+  });
+
+  var statusKeys=Object.keys(STATUS_META);
+  renderBarChart(document.getElementById("dash-status-chart"), statusKeys.map(function(k){
+    return {label:STATUS_META[k].label, value:byStatus[k]||0, color:"var(--status-"+k+")", key:k};
+  }), {showValue:true, integer:true, tooltipValue:function(v){ return fmtInt(v)+" โครงการ"; }, onClick:function(d){ goRegistryFilteredByStatus(d.key); }});
 
   var recentEl=document.getElementById("dash-recent");
   if(recent.length===0){
@@ -1405,12 +1490,13 @@ function renderBudgetAnalysis(){
   } else {
     renderBarChart(deptEl, deptOrder.map(function(k){
       return {label:k, value:deptTotals[k], color:"var(--status-submitted)"};
-    }));
+    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
-  renderDonutChart(document.getElementById("status-donut"), Object.keys(STATUS_META).map(function(k){
-    return {label:STATUS_META[k].label, value:statusCounts[k]||0, color:"var(--status-"+k+")"};
-  }));
+  var statusKeys2=Object.keys(STATUS_META);
+  renderDonutChart(document.getElementById("status-donut"), statusKeys2.map(function(k){
+    return {label:STATUS_META[k].label, value:statusCounts[k]||0, color:"var(--status-"+k+")", key:k};
+  }), {tooltipValue:function(v){ return fmtInt(v)+" โครงการ"; }, onClick:function(d){ goRegistryFilteredByStatus(d.key); }});
 
   var chartEl=document.getElementById("budget-chart");
   if(catGrand<=0){
@@ -1418,7 +1504,7 @@ function renderBudgetAnalysis(){
   } else {
     renderBarChart(chartEl, CATEGORY_ORDER.map(function(k){
       return {label:CATEGORY_META[k].label, value:catTotals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
-    }));
+    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }});
   }
 }
 
@@ -1449,8 +1535,8 @@ function renderStrategyAnalysis(){
 
   var palette=CATEGORY_ORDER.map(function(k){ return "var(--"+CATEGORY_META[k].cls+")"; });
   renderBarChart(document.getElementById("strategy-hosp-chart"), STRATEGIES.hospital.map(function(h,i){
-    return {label:h.id, value:hospCounts[h.id]||0, color:palette[i%palette.length]};
-  }), {showValue:true, integer:true});
+    return {label:h.id, value:hospCounts[h.id]||0, color:palette[i%palette.length], full:h.label};
+  }), {showValue:true, integer:true, tooltipValue:function(v){ return fmtInt(v)+" โครงการ"; }});
 }
 
 /* ---- detail rendering ---- */
