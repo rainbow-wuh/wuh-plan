@@ -186,6 +186,10 @@ main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 .panel-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;}
 .panel-row .panel{margin-bottom:0;display:flex;flex-direction:column;}
 @media (max-width:760px){.panel-row{grid-template-columns:1fr;}}
+.panel-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:stretch;}
+.panel-row-3 .panel{margin-bottom:0;display:flex;flex-direction:column;}
+@media (max-width:980px){.panel-row-3{grid-template-columns:1fr 1fr;}}
+@media (max-width:640px){.panel-row-3{grid-template-columns:1fr;}}
 .donut-legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:14px;}
 .donut-legend-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-muted);}
 .donut-legend-swatch{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none;}
@@ -1460,12 +1464,17 @@ function renderBudgetAnalysis(){
   });
   var catGrand = CATEGORY_ORDER.reduce(function(s,k){ return s+catTotals[k]; },0);
 
-  var deptTotals={}, deptOrder=[];
-  proposals.forEach(function(p){
-    var key = p.department || p.division || "ไม่ระบุหน่วยงาน";
-    if(!deptTotals.hasOwnProperty(key)){ deptTotals[key]=0; deptOrder.push(key); }
-    deptTotals[key] += budgetTotal(p);
-  });
+  function groupBudgetBy(field, fallbackLabel){
+    var totals={}, order=[];
+    proposals.forEach(function(p){
+      var key = p[field] || fallbackLabel;
+      if(!totals.hasOwnProperty(key)){ totals[key]=0; order.push(key); }
+      totals[key] += budgetTotal(p);
+    });
+    return {totals:totals, order:order};
+  }
+  var byDept = groupBudgetBy("department", "ไม่ระบุฝ่าย");
+  var byDivision = groupBudgetBy("division", "ไม่ระบุแผนก");
 
   var statusCounts={draft:0,submitted:0,approved:0,revision:0};
   proposals.forEach(function(p){ statusCounts[p.status]=(statusCounts[p.status]||0)+1; });
@@ -1473,8 +1482,9 @@ function renderBudgetAnalysis(){
   el.innerHTML =
     '<div class="page-title">วิเคราะห์งบประมาณ &amp; KPI</div>'+
     '<div class="page-sub">สรุปงบประมาณและสถานะการพิจารณาโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
-    '<div class="panel-row" style="margin-bottom:16px;">'+
-      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามกลุ่มงาน/หน่วยงาน</h3><div id="dept-chart"></div></div>'+
+    '<div class="panel-row-3" style="margin-bottom:16px;">'+
+      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามฝ่าย</h3><div id="dept-chart"></div></div>'+
+      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามแผนก</h3><div id="division-chart"></div></div>'+
       '<div class="panel"><h3 class="panel-title">สัดส่วนสถานะการพิจารณาโครงการ</h3><div id="status-donut"></div></div>'+
     '</div>'+
     '<div class="stats cat-stats">'+
@@ -1485,11 +1495,20 @@ function renderBudgetAnalysis(){
     '<div class="panel"><h3 class="panel-title">สรุปค่าใช้จ่ายแยกตามหมวดงบประมาณ</h3><div id="budget-chart"></div></div>';
 
   var deptEl=document.getElementById("dept-chart");
-  if(deptOrder.length===0){
+  if(byDept.order.length===0){
     deptEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลโครงการ</div>';
   } else {
-    renderBarChart(deptEl, deptOrder.map(function(k){
-      return {label:k, value:deptTotals[k], color:"var(--status-submitted)"};
+    renderBarChart(deptEl, byDept.order.map(function(k){
+      return {label:k, value:byDept.totals[k], color:"var(--status-submitted)"};
+    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
+  }
+
+  var divisionEl=document.getElementById("division-chart");
+  if(byDivision.order.length===0){
+    divisionEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลโครงการ</div>';
+  } else {
+    renderBarChart(divisionEl, byDivision.order.map(function(k){
+      return {label:k, value:byDivision.totals[k], color:"var(--accent)"};
     }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
@@ -1576,13 +1595,13 @@ function renderDetail(){
     {num:2,th:"ความเชื่อมโยงยุทธศาสตร์",en:"Strategic alignment",render:renderStrategySection},
     {num:3,th:"หลักการ เหตุผล และวัตถุประสงค์",en:"Rationale & objectives",render:renderRationaleSection},
     {num:4,th:"รูปแบบและแผนการดำเนินงาน",en:"Implementation plan",render:renderImplementationSection},
-    {num:5,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,onlyNew:true},
-    {num:6,th:"ผลสัมฤทธิ์ของโครงการ / ตัวชี้วัดความสำเร็จ",en:"Outcomes & KPIs",render:renderOutcomesSection},
-    {num:7,th:"รายละเอียดงบประมาณโครงการ",en:"Budget details",render:renderBudgetSection},
-    {num:8,th:"การประเมินแบบ Realistic Scenario",en:"Scenario planning",render:renderScenarioSection},
-    {num:9,th:"แผนบริหารความเสี่ยง",en:"Risk management",render:renderRiskSection},
-    {num:10,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
-    {num:11,th:"ผู้เสนอโครงการ",en:"Proposer sign-off",render:renderSignatorySection}
+    {num:5,th:"ผลสัมฤทธิ์ของโครงการ / ตัวชี้วัดความสำเร็จ",en:"Outcomes & KPIs",render:renderOutcomesSection},
+    {num:6,th:"รายละเอียดงบประมาณโครงการ",en:"Budget details",render:renderBudgetSection},
+    {num:7,th:"แผนบริหารความเสี่ยง",en:"Risk management",render:renderRiskSection},
+    {num:8,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,onlyNew:true},
+    {num:9,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
+    {num:10,th:"ผู้เสนอโครงการ",en:"Proposer sign-off",render:renderSignatorySection},
+    {num:11,th:"การประเมินแบบ Realistic Scenario",en:"Scenario planning",render:renderScenarioSection}
   ];
 
   var wrap=document.getElementById("sections");
