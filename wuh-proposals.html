@@ -466,6 +466,9 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
         <option value="newspecial">โครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี</option>
       </select>
       <div class="spacer"></div>
+      <button class="btn-secondary" id="btn-download-template">⇩ เทมเพลตนำเข้า</button>
+      <button class="btn-secondary" id="btn-import">⇧ นำเข้าโครงการ</button>
+      <input type="file" id="import-file-input" accept=".xlsx" style="display:none;">
       <button class="btn-primary" id="btn-new">+ เสนอโครงการใหม่</button>
     </div>
     <div id="cards"></div>
@@ -814,6 +817,215 @@ async function downloadProposalExcel(p){
       toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
     });
   }).catch(function(){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); });
+}
+
+/* ---- bulk import template ---- */
+var IMPORT_COLUMNS = [
+  {key:"division", header:"แผนก"},
+  {key:"department", header:"ฝ่าย"},
+  {key:"type", header:"ประเภทโครงการ"},
+  {key:"status", header:"สถานะ"},
+  {key:"docCode", header:"รหัสเอกสาร"},
+  {key:"name", header:"ชื่อโครงการ *"},
+  {key:"rationale", header:"หลักการและเหตุผล"},
+  {key:"objectives", header:"วัตถุประสงค์"},
+  {key:"targetGroup", header:"กลุ่มเป้าหมาย"},
+  {key:"targetQty", header:"จำนวนเป้าหมาย"},
+  {key:"targetUnit", header:"หน่วย"},
+  {key:"mainActivities", header:"กิจกรรมหลัก"},
+  {key:"outputs", header:"ผลผลิต"},
+  {key:"outcomes", header:"ผลลัพธ์"},
+  {key:"fundCode", header:"รหัสกองทุน"},
+  {key:"orgCode", header:"หน่วยงาน"},
+  {key:"programCode", header:"แผนงาน"},
+  {key:"accountCode", header:"ผังบัญชี"},
+  {key:"fundingSource", header:"แหล่งเงิน"},
+  {key:"totalBudget", header:"งบประมาณรวม (บาท) *"},
+  {key:"sigName", header:"ชื่อผู้เสนอ"},
+  {key:"sigPosition", header:"ตำแหน่งผู้เสนอ"},
+  {key:"sigDate", header:"วันที่เสนอ (YYYY-MM-DD)"}
+];
+var IMPORT_WIDE_KEYS = {name:1,rationale:1,objectives:1,mainActivities:1,outputs:1,outcomes:1};
+
+function labelToKey(meta, label, fallback){
+  if(label==null) return fallback;
+  var s=String(label).trim();
+  if(!s) return fallback;
+  var found=Object.keys(meta).find(function(k){ return meta[k].label===s; });
+  return found||fallback;
+}
+function unitLabelToKey(label, fallback){
+  if(label==null) return fallback;
+  var s=String(label).trim();
+  if(!s) return fallback;
+  var found=Object.keys(TARGET_UNIT_LABEL).find(function(k){ return TARGET_UNIT_LABEL[k]===s; });
+  return found||fallback;
+}
+function cellText(v){
+  if(v==null) return "";
+  if(typeof v==="object"){
+    if(v.text!=null) return String(v.text);
+    if(v.richText) return v.richText.map(function(r){ return r.text; }).join("");
+    if(v.result!=null) return String(v.result);
+  }
+  return String(v);
+}
+
+async function downloadImportTemplate(){
+  if(typeof ExcelJS === "undefined"){ toast("ไม่สามารถโหลดตัวสร้างไฟล์ Excel ได้ ลองใหม่อีกครั้ง"); return; }
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet("นำเข้าโครงการ");
+  var colCount = IMPORT_COLUMNS.length;
+
+  ws.mergeCells(1,1,1,colCount);
+  var titleCell = ws.getCell(1,1);
+  titleCell.value = "เทมเพลตนำเข้าข้อมูลโครงการ — ระบบเสนอโครงการ WUH";
+  titleCell.font = {bold:true, size:14};
+  ws.getRow(1).height = 26;
+
+  ws.mergeCells(2,1,2,colCount);
+  var noteCell = ws.getCell(2,1);
+  noteCell.value = "กรอกข้อมูลเริ่มจากแถวที่ 5 เป็นต้นไป · อย่าเปลี่ยนลำดับคอลัมน์ · ลบแถวตัวอย่าง (แถวที่ 4) ก่อนนำเข้าจริง · ช่องที่มี * จำเป็นต้องกรอก";
+  noteCell.font = {italic:true, size:11, color:{argb:"FFB23B3B"}};
+  noteCell.alignment = {wrapText:true, vertical:"top"};
+  ws.getRow(2).height = 20;
+
+  var headerRow = ws.getRow(3);
+  IMPORT_COLUMNS.forEach(function(c,i){
+    var cell = headerRow.getCell(i+1);
+    cell.value = c.header;
+    cell.font = {bold:true, color:{argb:"FFFFFFFF"}};
+    cell.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF5B3E78"}};
+    cell.alignment = {vertical:"middle", horizontal:"left", wrapText:true};
+  });
+  headerRow.height = 32;
+  ws.views = [{state:"frozen", ySplit:3}];
+
+  var example = {
+    division:"ศัลยกรรม", department:"ฝ่ายบริการผู้ป่วยนอก",
+    type:TYPE_META.new1y.label, status:STATUS_META.draft.label,
+    docCode:"Plan 2026:xxx", name:"(ตัวอย่าง) ลบแถวนี้ก่อนนำเข้าจริง",
+    rationale:"สรุปปัญหาและความจำเป็นโดยย่อ", objectives:"วัตถุประสงค์ของโครงการ",
+    targetGroup:"กลุ่มเป้าหมาย", targetQty:10, targetUnit:TARGET_UNIT_LABEL.day,
+    mainActivities:"กิจกรรมหลักของโครงการ", outputs:"ผลผลิตที่คาดว่าจะได้รับ", outcomes:"ผลลัพธ์ที่คาดว่าจะได้รับ",
+    fundCode:"E2200001", orgCode:"758200", programCode:"", accountCode:"BO-03000000", fundingSource:"F20000",
+    totalBudget:500000, sigName:"ชื่อ-สกุลผู้เสนอ", sigPosition:"ตำแหน่ง", sigDate:"2026-01-01"
+  };
+  var exampleRow = ws.getRow(4);
+  IMPORT_COLUMNS.forEach(function(c,i){ exampleRow.getCell(i+1).value = example[c.key]!=null ? example[c.key] : ""; });
+  exampleRow.eachCell(function(cell){ cell.font = {italic:true, color:{argb:"FF999999"}}; });
+
+  IMPORT_COLUMNS.forEach(function(c,i){
+    ws.getColumn(i+1).width = IMPORT_WIDE_KEYS[c.key] ? 34 : 18;
+  });
+
+  var lastRow = 203;
+  var typeList = Object.keys(TYPE_META).map(function(k){ return TYPE_META[k].label; }).join(",");
+  var statusList = Object.keys(STATUS_META).map(function(k){ return STATUS_META[k].label; }).join(",");
+  var unitList = Object.keys(TARGET_UNIT_LABEL).map(function(k){ return TARGET_UNIT_LABEL[k]; }).join(",");
+  var typeCol = IMPORT_COLUMNS.findIndex(function(c){ return c.key==="type"; })+1;
+  var statusCol = IMPORT_COLUMNS.findIndex(function(c){ return c.key==="status"; })+1;
+  var unitCol = IMPORT_COLUMNS.findIndex(function(c){ return c.key==="targetUnit"; })+1;
+  for(var r=5;r<=lastRow;r++){
+    ws.getCell(r,typeCol).dataValidation = {type:"list", allowBlank:true, formulae:['"'+typeList+'"']};
+    ws.getCell(r,statusCol).dataValidation = {type:"list", allowBlank:true, formulae:['"'+statusList+'"']};
+    ws.getCell(r,unitCol).dataValidation = {type:"list", allowBlank:true, formulae:['"'+unitList+'"']};
+  }
+
+  var buf = await wb.xlsx.writeBuffer();
+  var blob = new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  if(!(window.claude && window.claude.use)){ toast("ดาวน์โหลดได้เฉพาะเมื่อเปิดผ่านลิงก์ claude.ai"); return; }
+  var downloads = await window.claude.use("downloads");
+  if(!downloads){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); return; }
+  try{
+    await downloads.save({filename:"เทมเพลตนำเข้าโครงการ-WUH.xlsx", data:blob});
+    toast("ดาวน์โหลดเทมเพลตเรียบร้อย");
+  }catch(err){
+    if(err && err.code==="declined") return;
+    toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
+  }
+}
+
+async function handleImportFile(file){
+  if(!file) return;
+  if(typeof ExcelJS === "undefined"){ toast("ไม่สามารถโหลดตัวอ่านไฟล์ Excel ได้"); return; }
+  var buf;
+  try{ buf = await file.arrayBuffer(); }
+  catch(e){ toast("อ่านไฟล์ไม่สำเร็จ"); return; }
+  var wb = new ExcelJS.Workbook();
+  try{ await wb.xlsx.load(buf); }
+  catch(e){ toast("ไฟล์ไม่ถูกต้องหรือเสียหาย: "+(e&&e.message?e.message:"")); return; }
+  var ws = wb.worksheets[0];
+  if(!ws){ toast("ไม่พบชีตข้อมูลในไฟล์"); return; }
+
+  var nameCol = IMPORT_COLUMNS.findIndex(function(c){ return c.key==="name"; })+1;
+  var results=[], skipped=0;
+  var lastRow = ws.actualRowCount || ws.rowCount || 0;
+  for(var r=5; r<=lastRow; r++){
+    var row = ws.getRow(r);
+    var name = cellText(row.getCell(nameCol).value).trim();
+    if(!name){
+      var hasAny = IMPORT_COLUMNS.some(function(c,i){ return cellText(row.getCell(i+1).value).trim()!==""; });
+      if(hasAny) skipped++;
+      continue;
+    }
+    var p = emptyProposal();
+    p.name = name;
+    IMPORT_COLUMNS.forEach(function(c,i){
+      if(c.key==="name") return;
+      var s = cellText(row.getCell(i+1).value);
+      switch(c.key){
+        case "type": p.type = labelToKey(TYPE_META, s, p.type); break;
+        case "status": p.status = labelToKey(STATUS_META, s, p.status); break;
+        case "targetUnit": p.targetUnit = unitLabelToKey(s, p.targetUnit); break;
+        case "targetQty": p.targetQty = s; break;
+        case "totalBudget":
+          var amt=Number(s)||0;
+          if(amt>0) p.budgetItems=[{item:"งบประมาณรวม (นำเข้าจากเทมเพลต)", amount:amt, category:"operating"}];
+          break;
+        case "sigName": p.signatory.name = s; break;
+        case "sigPosition": p.signatory.position = s; break;
+        case "sigDate": p.signatory.date = s; break;
+        default: if(Object.prototype.hasOwnProperty.call(p,c.key)) p[c.key] = s;
+      }
+    });
+    results.push(p);
+  }
+
+  if(results.length===0){
+    toast(skipped>0 ? "ไม่พบโครงการที่มีชื่อ (ข้าม "+skipped+" แถวที่ไม่มีชื่อโครงการ)" : "ไม่พบข้อมูลในไฟล์ที่จะนำเข้า");
+    return;
+  }
+  showModal("นำเข้าโครงการ",
+    "พบข้อมูล "+results.length+" โครงการในไฟล์"+(skipped>0?" (ข้าม "+skipped+" แถวที่ไม่มีชื่อโครงการ)":"")+" ต้องการนำเข้าทั้งหมดหรือไม่?",
+    function(){ commitImportedProposals(results); },
+    "นำเข้า "+results.length+" โครงการ", false);
+}
+
+function commitImportedProposals(list){
+  var now=new Date().toISOString();
+  if(db){
+    var writes = list.map(function(p){
+      p.createdAt=now; p.updatedAt=now; p.isExample=false;
+      var ref = db.collection("proposals").doc();
+      p.id = ref.id;
+      return ref.set(JSON.parse(JSON.stringify(p)));
+    });
+    Promise.all(writes).then(function(){
+      toast("นำเข้าโครงการเรียบร้อย "+list.length+" รายการ");
+      switchTab("registry");
+    }).catch(function(err){
+      toast("นำเข้าไม่สำเร็จบางส่วน: "+(err&&err.message?err.message:"unknown"));
+    });
+  } else {
+    list.forEach(function(p){
+      p.id=uid(); p.createdAt=now; p.updatedAt=now; p.isExample=false;
+      proposals.push(p);
+    });
+    saveLocal(proposals);
+    toast("นำเข้าโครงการเรียบร้อย "+list.length+" รายการ (โหมดออฟไลน์)");
+    switchTab("registry");
+  }
 }
 
 /* ---- state ---- */
@@ -1609,6 +1821,13 @@ function attachListListeners(){
   document.getElementById("search-input").oninput=function(){ renderRegistry(); };
   document.getElementById("filter-status").onchange=function(){ renderRegistry(); };
   document.getElementById("filter-type").onchange=function(){ renderRegistry(); };
+  document.getElementById("btn-download-template").onclick=function(){ downloadImportTemplate(); };
+  document.getElementById("btn-import").onclick=function(){ document.getElementById("import-file-input").click(); };
+  document.getElementById("import-file-input").onchange=function(e){
+    var file = e.target.files && e.target.files[0];
+    handleImportFile(file);
+    e.target.value = "";
+  };
   Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(btn){
     btn.onclick=function(){ switchTab(btn.getAttribute("data-tab")); };
   });
