@@ -1631,18 +1631,20 @@ function renderBudgetAnalysis(){
   if(byDept.order.length===0){
     deptEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลโครงการ</div>';
   } else {
-    renderBarChart(deptEl, byDept.order.map(function(k){
+    var deptData = byDept.order.map(function(k){
       return {label:k, value:byDept.totals[k], color:"var(--status-submitted)"};
-    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
+    }).sort(function(a,b){ return b.value-a.value; });
+    renderBarChart(deptEl, deptData, {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
   var divisionEl=document.getElementById("division-chart");
   if(byDivision.order.length===0){
     divisionEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลโครงการ</div>';
   } else {
-    renderBarChart(divisionEl, byDivision.order.map(function(k){
+    var divisionData = byDivision.order.map(function(k){
       return {label:k, value:byDivision.totals[k], color:"var(--accent)"};
-    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
+    }).sort(function(a,b){ return b.value-a.value; });
+    renderBarChart(divisionEl, divisionData, {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
   var statusKeys2=Object.keys(STATUS_META);
@@ -1654,9 +1656,10 @@ function renderBudgetAnalysis(){
   if(catGrand<=0){
     chartEl.innerHTML='<div class="empty-state">ยังไม่มีข้อมูลงบประมาณให้วิเคราะห์</div>';
   } else {
-    renderBarChart(chartEl, CATEGORY_ORDER.map(function(k){
+    var catData = CATEGORY_ORDER.map(function(k){
       return {label:CATEGORY_META[k].label, value:catTotals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
-    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }});
+    }).sort(function(a,b){ return b.value-a.value; });
+    renderBarChart(chartEl, catData, {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }});
   }
 }
 
