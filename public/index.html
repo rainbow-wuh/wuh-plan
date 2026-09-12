@@ -165,6 +165,12 @@ a{color:var(--accent);}
   font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;
 }
 #tabbar .tab:not(.active) .tab-count{background:var(--border);color:var(--ink-muted);}
+.fy-picker{display:flex;align-items:center;gap:8px;flex:none;}
+.fy-picker-label{font-size:12.5px;color:var(--ink-muted);font-weight:600;white-space:nowrap;}
+.fy-picker select{
+  background:var(--accent-soft);color:var(--accent);border:1px solid transparent;
+  border-radius:8px;padding:7px 10px;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;
+}
 
 main{max-width:1180px;margin:0 auto;padding:24px 20px 80px;}
 
@@ -468,6 +474,11 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
   <button class="tab" data-tab="registry"><span class="tab-icon">📁</span><span>รายการเสนอโครงการทั้งหมด</span><span class="tab-count" id="tab-count">0</span></button>
   <button class="tab" data-tab="budget"><span class="tab-icon">📈</span><span>วิเคราะห์งบประมาณ &amp; KPI</span></button>
   <button class="tab" data-tab="strategy"><span class="tab-icon">🎯</span><span>การสอดคล้องยุทธศาสตร์</span></button>
+  <div class="spacer"></div>
+  <div class="fy-picker">
+    <span class="fy-picker-label">ปีงบประมาณ</span>
+    <select id="global-fiscal-year"></select>
+  </div>
 </nav>
 
 <main>
@@ -624,7 +635,7 @@ function emptyProposal(){
     multiYearBudget:[ {item:"",year2:0,year3:0,year4:0,year5:0} ],
     scenario:{ worst:{}, likely:{}, best:{} },
     risks: RISK_CATEGORIES.map(function(c){ return {category:c,event:"",impact:"",likelihood:"กลาง",mitigation:""}; }),
-    actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""} ],
+    actionPlan:[ {activity:"",timeline:"",kpi:"",budget:"",responsible:"",note:""} ],
     signatory:{ name:"", position:"", date:"" },
     createdAt:null, updatedAt:null
   };
@@ -837,10 +848,11 @@ async function exportProposalToExcel(p){
     fitRow(ws, r, (rk.event||"")+" / "+(rk.mitigation||""), 55, 20);
   });
 
+  xlText(ws,"F113","หมายเหตุ");
   (p.actionPlan||[]).slice(0,8).forEach(function(a,i){
     var r=115+i;
     xlText(ws,"A"+r,a.activity||""); xlText(ws,"B"+r,a.timeline||""); xlText(ws,"D"+r,a.kpi||"");
-    xlText(ws,"E"+r,a.budget||""); xlText(ws,"F"+r,a.link||""); xlText(ws,"G"+r,a.responsible||"");
+    xlText(ws,"E"+r,a.budget||""); xlText(ws,"F"+r,a.note||""); xlText(ws,"G"+r,a.responsible||"");
     fitRow(ws, r, a.activity, 35, 20);
   });
 
@@ -1086,6 +1098,35 @@ var proposals=[]; // list snapshot
 var current=null; // proposal being edited
 var view="dashboard";
 var unsubList=null;
+var globalFiscalYear=null;
+
+function getCurrentFiscalYearBE(){
+  var now=new Date();
+  var beYear=now.getFullYear()+543;
+  var month=now.getMonth()+1;
+  return month>=10 ? (beYear+1) : beYear;
+}
+function fiscalYearOptions(){
+  var years={};
+  proposals.forEach(function(p){ if(p.fiscalYear) years[p.fiscalYear]=true; });
+  var cur=getCurrentFiscalYearBE();
+  [cur-1,cur,cur+1].forEach(function(y){ years[String(y)]=true; });
+  return Object.keys(years).sort(function(a,b){ return Number(a)-Number(b); });
+}
+function syncFiscalYearPicker(){
+  var sel=document.getElementById("global-fiscal-year");
+  var opts=fiscalYearOptions();
+  if(!globalFiscalYear || opts.indexOf(globalFiscalYear)===-1){
+    globalFiscalYear = opts.indexOf(String(getCurrentFiscalYearBE()))>-1 ? String(getCurrentFiscalYearBE()) : opts[opts.length-1];
+  }
+  sel.innerHTML = opts.map(function(y){
+    return '<option value="'+y+'"'+(y===globalFiscalYear?" selected":"")+'>ปีงบประมาณ '+y+'</option>';
+  }).join("");
+  sel.value=globalFiscalYear;
+}
+function proposalsInFiscalYear(){
+  return proposals.filter(function(p){ return p.fiscalYear===globalFiscalYear; });
+}
 
 function toast(msg){
   var t=document.getElementById("toast");
@@ -1158,10 +1199,10 @@ function exampleSeed(){
     {category:RISK_CATEGORIES[3],event:"ระบบบันทึกข้อมูลผู้ป่วยขัดข้อง",impact:"กระทบการติดตามหลังผ่าตัด",likelihood:"ต่ำ",mitigation:"สำรองระบบบันทึกกระดาษคู่ขนาน"}
   ];
   a.actionPlan=[
-    {activity:"จัดเตรียมพื้นที่และอุปกรณ์ (Plan)",timeline:"ต.ค.–ธ.ค. 2568",kpi:"พื้นที่พร้อมใช้งาน 100%",budget:"340,000",link:"WUH-1",responsible:"ฝ่ายวิศวกรรม"},
-    {activity:"อบรมทีมและทดลองระบบ (Do)",timeline:"ม.ค. 2569",kpi:"บุคลากรผ่านการอบรม 100%",budget:"180,000",link:"WUH-2",responsible:"ฝ่ายพัฒนาบุคลากร"},
-    {activity:"ประเมินผลนำร่อง (Check)",timeline:"ก.พ.–เม.ย. 2569",kpi:"วันนอนเฉลี่ยลดลง ≥20%",budget:"-",link:"WUH-4",responsible:"หัวหน้าศัลยกรรม"},
-    {activity:"ขยายผลและปรับปรุง (Act)",timeline:"พ.ค. 2569",kpi:"เปิดบริการเต็มรูปแบบ",budget:"-",link:"WUH-1",responsible:"หัวหน้าศัลยกรรม"}
+    {activity:"จัดเตรียมพื้นที่และอุปกรณ์ (Plan)",timeline:"ต.ค.–ธ.ค. 2568",kpi:"พื้นที่พร้อมใช้งาน 100%",budget:"340,000",responsible:"ฝ่ายวิศวกรรม",note:""},
+    {activity:"อบรมทีมและทดลองระบบ (Do)",timeline:"ม.ค. 2569",kpi:"บุคลากรผ่านการอบรม 100%",budget:"180,000",responsible:"ฝ่ายพัฒนาบุคลากร",note:""},
+    {activity:"ประเมินผลนำร่อง (Check)",timeline:"ก.พ.–เม.ย. 2569",kpi:"วันนอนเฉลี่ยลดลง ≥20%",budget:"-",responsible:"หัวหน้าศัลยกรรม",note:"ประเมินผล 3 เดือนหลังเปิดบริการ"},
+    {activity:"ขยายผลและปรับปรุง (Act)",timeline:"พ.ค. 2569",kpi:"เปิดบริการเต็มรูปแบบ",budget:"-",responsible:"หัวหน้าศัลยกรรม",note:""}
   ];
   a.signatory={name:"นพ. สมชาย ใจดี",position:"หัวหน้าฝ่ายศัลยกรรม",date:"2025-09-01"};
   var now=new Date(); now.setDate(now.getDate()-3);
@@ -1183,7 +1224,7 @@ function exampleSeed(){
   b.programCode="Z40101030-02";
   b.budgetItems=[{item:"ค่าบำรุงรักษาระบบจ่ายยาอัตโนมัติรายปี",amount:480000,category:"operating"},{item:"วัสดุสิ้นเปลืองสำหรับระบบ",amount:95000,category:"materials"}];
   b.risks=RISK_CATEGORIES.map(function(c){return {category:c,event:"",impact:"",likelihood:"ต่ำ",mitigation:""};});
-  b.actionPlan=[{activity:"ต่อสัญญาบำรุงรักษา (Plan)",timeline:"ต.ค. 2568",kpi:"ลงนามสัญญาทันกำหนด",budget:"480,000",link:"WUH-2",responsible:"หัวหน้าเภสัชกรรม"}];
+  b.actionPlan=[{activity:"ต่อสัญญาบำรุงรักษา (Plan)",timeline:"ต.ค. 2568",kpi:"ลงนามสัญญาทันกำหนด",budget:"480,000",responsible:"หัวหน้าเภสัชกรรม",note:""}];
   b.signatory={name:"ภญ. วราภรณ์ สุขใจ",position:"หัวหน้าฝ่ายเภสัชกรรม",date:"2025-08-20"};
   var now2=new Date(); now2.setDate(now2.getDate()-12);
   b.createdAt=now2.toISOString(); b.updatedAt=now2.toISOString();
@@ -1209,7 +1250,8 @@ function renderShell(){
   });
   document.getElementById("view-detail").style.display = (view==="detail") ? "block" : "none";
   document.getElementById("tabbar").style.display = (view==="detail") ? "none" : "flex";
-  document.getElementById("tab-count").textContent = fmtInt(proposals.length);
+  if(view!=="detail") syncFiscalYearPicker();
+  document.getElementById("tab-count").textContent = fmtInt(proposalsInFiscalYear().length);
   Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(btn){
     btn.classList.toggle("active", btn.getAttribute("data-tab")===view);
   });
@@ -1380,16 +1422,17 @@ function renderDonutChart(container, data, opts){
 /* ---- dashboard ---- */
 function renderDashboard(){
   var el=document.getElementById("view-dashboard");
+  var scoped=proposalsInFiscalYear();
   var byStatus={draft:0,submitted:0,approved:0,revision:0};
   var totalBudget=0;
-  proposals.forEach(function(p){ byStatus[p.status]=(byStatus[p.status]||0)+1; totalBudget+=budgetTotal(p); });
-  var recent=proposals.slice().sort(function(a,b){ return (b.updatedAt||"").localeCompare(a.updatedAt||""); }).slice(0,5);
+  scoped.forEach(function(p){ byStatus[p.status]=(byStatus[p.status]||0)+1; totalBudget+=budgetTotal(p); });
+  var recent=scoped.slice().sort(function(a,b){ return (b.updatedAt||"").localeCompare(a.updatedAt||""); }).slice(0,5);
 
   el.innerHTML =
     '<div class="page-title">ภาพรวมแผนงาน</div>'+
-    '<div class="page-sub">สรุปภาพรวมข้อเสนอโครงการและงบประมาณทั้งหมด</div>'+
+    '<div class="page-sub">สรุปภาพรวมข้อเสนอโครงการและงบประมาณ ปีงบประมาณ '+esc(globalFiscalYear)+'</div>'+
     '<div class="stats">'+
-      '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(proposals.length)+'</div></div>'+
+      '<div class="stat-tile"><div class="label">โครงการทั้งหมด</div><div class="value num">'+fmtInt(scoped.length)+'</div></div>'+
       '<div class="stat-tile"><div class="label">งบประมาณรวมที่เสนอ</div><div class="value small num">'+fmtMoney(totalBudget)+' บาท</div></div>'+
       '<div class="stat-tile stat-tile-clickable" data-status="submitted"><div class="label">รออนุมัติ</div><div class="value num">'+fmtInt(byStatus.submitted)+'</div></div>'+
       '<div class="stat-tile stat-tile-clickable" data-status="approved"><div class="label">อนุมัติแล้ว</div><div class="value num">'+fmtInt(byStatus.approved)+'</div></div>'+
@@ -1440,15 +1483,16 @@ function populateFilterSelect(selectEl, values, allLabel){
 }
 
 function renderRegistry(){
-  populateFilterSelect(document.getElementById("filter-division"), proposals.map(function(p){ return p.division; }), "แผนกทั้งหมด");
-  populateFilterSelect(document.getElementById("filter-department"), proposals.map(function(p){ return p.department; }), "ฝ่ายทั้งหมด");
+  var scoped=proposalsInFiscalYear();
+  populateFilterSelect(document.getElementById("filter-division"), scoped.map(function(p){ return p.division; }), "แผนกทั้งหมด");
+  populateFilterSelect(document.getElementById("filter-department"), scoped.map(function(p){ return p.department; }), "ฝ่ายทั้งหมด");
 
   var q=(document.getElementById("search-input").value||"").trim().toLowerCase();
   var fStatus=document.getElementById("filter-status").value;
   var fType=document.getElementById("filter-type").value;
   var fDivision=document.getElementById("filter-division").value;
   var fDepartment=document.getElementById("filter-department").value;
-  var list=proposals.filter(function(p){
+  var list=scoped.filter(function(p){
     if(fStatus && p.status!==fStatus) return false;
     if(fType && p.type!==fType) return false;
     if(fDivision && p.division!==fDivision) return false;
@@ -1502,9 +1546,10 @@ function renderRegistry(){
 /* ---- budget breakdown analysis ---- */
 function renderBudgetAnalysis(){
   var el=document.getElementById("view-budget");
+  var scoped=proposalsInFiscalYear();
 
   var catTotals={compensation:0,operating:0,materials:0,capital:0};
-  proposals.forEach(function(p){
+  scoped.forEach(function(p){
     (p.budgetItems||[]).forEach(function(it){
       var cat = it.category && catTotals.hasOwnProperty(it.category) ? it.category : "operating";
       catTotals[cat] += budgetItemTotal(it);
@@ -1514,7 +1559,7 @@ function renderBudgetAnalysis(){
 
   function groupBudgetBy(field, fallbackLabel){
     var totals={}, order=[];
-    proposals.forEach(function(p){
+    scoped.forEach(function(p){
       var key = p[field] || fallbackLabel;
       if(!totals.hasOwnProperty(key)){ totals[key]=0; order.push(key); }
       totals[key] += budgetTotal(p);
@@ -1525,11 +1570,11 @@ function renderBudgetAnalysis(){
   var byDivision = groupBudgetBy("division", "ไม่ระบุแผนก");
 
   var statusCounts={draft:0,submitted:0,approved:0,revision:0};
-  proposals.forEach(function(p){ statusCounts[p.status]=(statusCounts[p.status]||0)+1; });
+  scoped.forEach(function(p){ statusCounts[p.status]=(statusCounts[p.status]||0)+1; });
 
   el.innerHTML =
     '<div class="page-title">วิเคราะห์งบประมาณ &amp; KPI</div>'+
-    '<div class="page-sub">สรุปงบประมาณและสถานะการพิจารณาโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="page-sub">สรุปงบประมาณและสถานะการพิจารณาโครงการ ปีงบประมาณ '+esc(globalFiscalYear)+' ('+fmtInt(scoped.length)+' โครงการ)</div>'+
     '<div class="panel-row-3" style="margin-bottom:16px;">'+
       '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามฝ่าย</h3><div id="dept-chart"></div></div>'+
       '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามแผนก</h3><div id="division-chart"></div></div>'+
@@ -1578,9 +1623,10 @@ function renderBudgetAnalysis(){
 /* ---- strategic alignment analysis ---- */
 function renderStrategyAnalysis(){
   var el=document.getElementById("view-strategy");
+  var scoped=proposalsInFiscalYear();
   var hospCounts={}; STRATEGIES.hospital.forEach(function(h){ hospCounts[h.id]=0; });
   var uniCounts={}; STRATEGIES.university.forEach(function(s){ uniCounts[s.code]=0; });
-  proposals.forEach(function(p){
+  scoped.forEach(function(p){
     ((p.strategies&&p.strategies.hospital)||[]).forEach(function(id){ if(hospCounts.hasOwnProperty(id)) hospCounts[id]++; });
     var uni=(p.strategies&&p.strategies.university)||{};
     Object.keys(uni).forEach(function(code){
@@ -1592,7 +1638,7 @@ function renderStrategyAnalysis(){
 
   el.innerHTML =
     '<div class="page-title">ความสอดคล้องกับยุทธศาสตร์</div>'+
-    '<div class="page-sub">จำนวนโครงการที่เชื่อมโยงกับแต่ละยุทธศาสตร์ จากโครงการทั้งหมด '+fmtInt(proposals.length)+' โครงการ</div>'+
+    '<div class="page-sub">จำนวนโครงการที่เชื่อมโยงกับแต่ละยุทธศาสตร์ ปีงบประมาณ '+esc(globalFiscalYear)+' ('+fmtInt(scoped.length)+' โครงการ)</div>'+
     '<div class="panel"><h3 class="panel-title">ยุทธศาสตร์ระดับโรงพยาบาล (Hospital-level)</h3><div id="strategy-hosp-chart"></div></div>'+
     '<div class="panel"><h3 class="panel-title">ยุทธศาสตร์ระดับมหาวิทยาลัย (University-level)</h3><div class="stats">'+
       STRATEGIES.university.map(function(s){
@@ -1648,7 +1694,7 @@ function renderDetail(){
     {num:4,th:"รูปแบบและแผนการดำเนินงาน",en:"Implementation plan",render:renderImplementationSection},
     {num:5,th:"ผลสัมฤทธิ์ของโครงการ / ตัวชี้วัดความสำเร็จ",en:"Outcomes & KPIs",render:renderOutcomesSection},
     {num:6,th:"รายละเอียดงบประมาณโครงการ",en:"Budget details",render:renderBudgetSection},
-    {num:7,th:"แผนปฏิบัติการ",en:"Action plan (PDCA)",render:renderActionSection},
+    {num:7,th:"แผนปฏิบัติการ (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Action plan (PDCA)",render:renderActionSection,hide:hideUnlessNew},
     {num:8,th:"การประเมินความคุ้มค่า (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Cost-benefit evaluation",render:renderCostBenefitSection,hide:hideUnlessNew},
     {num:9,th:"แผนบริหารความเสี่ยง (เฉพาะโครงการใหม่/โครงการพิเศษ)",en:"Risk management",render:renderRiskSection,hide:hideUnlessNew},
     {num:10,th:"กรณีโครงการดำเนินงานมากกว่า 1 ปี ให้ระบุงบประมาณแต่ละปี (ปีที่ 2 ถึงปีที่ 5)",en:"Multi-year budget (special projects only)",render:renderMultiYearBudgetSection,hide:hideUnlessSpecial},
@@ -2063,15 +2109,16 @@ function renderRiskSection(el,p){
 
 function renderActionSection(el,p){
   el.innerHTML =
+    '<div class="note-red">แสดงเฉพาะโครงการใหม่/โครงการพิเศษ</div>'+
     '<span class="pdca-flag">PDCA · Plan – Do – Check – Act</span>'+
     '<div class="table-wrap"><table class="grid-table"><thead><tr>'+
-      '<th>ขั้นตอนกิจกรรม</th><th style="width:14%">ระยะเวลา</th><th style="width:16%">ตัวชี้วัด (KPI)</th><th style="width:12%">งบประมาณ</th><th style="width:10%">เชื่อมโยง</th><th style="width:14%">ผู้รับผิดชอบ</th><th style="width:36px"></th>'+
+      '<th>ขั้นตอนกิจกรรม</th><th style="width:16%">ระยะเวลาดำเนินการ</th><th style="width:18%">ค่าเป้าหมาย/ตัวชี้วัด</th><th style="width:14%">งบประมาณ (ถ้ามี)</th><th style="width:14%">ผู้รับผิดชอบ</th><th style="width:16%">หมายเหตุ</th><th style="width:36px"></th>'+
     '</tr></thead><tbody id="action-body"></tbody></table></div>'+
     '<div class="row-actions"><button class="add-row-btn" id="add-action">+ เพิ่มกิจกรรม</button></div>';
-  var cols=[{key:"activity",type:"text"},{key:"timeline",type:"text"},{key:"kpi",type:"text"},{key:"budget",type:"text"},{key:"link",type:"text"},{key:"responsible",type:"text"}];
+  var cols=[{key:"activity",type:"text"},{key:"timeline",type:"text"},{key:"kpi",type:"text"},{key:"budget",type:"text"},{key:"responsible",type:"text"},{key:"note",type:"text"}];
   renderArrayTable("action-body",p.actionPlan,cols);
   document.getElementById("add-action").onclick=function(){
-    p.actionPlan.push({activity:"",timeline:"",kpi:"",budget:"",link:"",responsible:""});
+    p.actionPlan.push({activity:"",timeline:"",kpi:"",budget:"",responsible:"",note:""});
     renderArrayTable("action-body",p.actionPlan,cols);
   };
 }
@@ -2176,7 +2223,15 @@ function deleteCurrent(){
 
 /* ---- boot ---- */
 function attachListListeners(){
-  document.getElementById("btn-new").onclick=function(){ goDetail(emptyProposal()); };
+  document.getElementById("btn-new").onclick=function(){
+    var np=emptyProposal();
+    np.fiscalYear=globalFiscalYear||String(getCurrentFiscalYearBE());
+    goDetail(np);
+  };
+  document.getElementById("global-fiscal-year").onchange=function(e){
+    globalFiscalYear=e.target.value;
+    renderShell();
+  };
   document.getElementById("search-input").oninput=function(){ renderRegistry(); };
   document.getElementById("filter-status").onchange=function(){ renderRegistry(); };
   document.getElementById("filter-type").onchange=function(){ renderRegistry(); };
