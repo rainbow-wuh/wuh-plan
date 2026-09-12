@@ -866,21 +866,46 @@ async function exportProposalToExcel(p){
   return {blob:blob, filename: safeName + ".xlsx"};
 }
 
+function saveFileViaBrowser(filename, blob){
+  try{
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    toast("บันทึกไฟล์เรียบร้อย");
+  }catch(err){
+    toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
+  }
+}
+
+async function saveGeneratedFile(filename, blob){
+  if(window.claude && window.claude.use){
+    try{
+      var downloads = await window.claude.use("downloads");
+      if(downloads){
+        try{
+          await downloads.save({filename:filename, data:blob});
+          toast("บันทึกไฟล์เรียบร้อย");
+          return;
+        }catch(err){
+          if(err && err.code==="declined") return;
+        }
+      }
+    }catch(e){ /* fall through to browser download */ }
+  }
+  saveFileViaBrowser(filename, blob);
+}
+
 async function downloadProposalExcel(p){
   var built;
   try{ built = await exportProposalToExcel(p); }
   catch(err){ toast("สร้างไฟล์ไม่สำเร็จ: "+(err&&err.message?err.message:"unknown")); return; }
   if(!built) return;
-  if(!(window.claude && window.claude.use)){ toast("ดาวน์โหลดได้เฉพาะเมื่อเปิดผ่านลิงก์ claude.ai"); return; }
-  window.claude.use("downloads").then(function(downloads){
-    if(!downloads){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); return; }
-    downloads.save({filename:built.filename, data:built.blob}).then(function(){
-      toast("บันทึกไฟล์ Excel เรียบร้อย");
-    }).catch(function(err){
-      if(err && err.code==="declined") return;
-      toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
-    });
-  }).catch(function(){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); });
+  saveGeneratedFile(built.filename, built.blob);
 }
 
 /* ---- bulk import template ---- */
@@ -998,16 +1023,7 @@ async function downloadImportTemplate(){
 
   var buf = await wb.xlsx.writeBuffer();
   var blob = new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  if(!(window.claude && window.claude.use)){ toast("ดาวน์โหลดได้เฉพาะเมื่อเปิดผ่านลิงก์ claude.ai"); return; }
-  var downloads = await window.claude.use("downloads");
-  if(!downloads){ toast("ดาวน์โหลดไม่พร้อมใช้งานในหน้านี้"); return; }
-  try{
-    await downloads.save({filename:"เทมเพลตนำเข้าโครงการ-WUH.xlsx", data:blob});
-    toast("ดาวน์โหลดเทมเพลตเรียบร้อย");
-  }catch(err){
-    if(err && err.code==="declined") return;
-    toast("ดาวน์โหลดไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
-  }
+  await saveGeneratedFile("เทมเพลตนำเข้าโครงการ-WUH.xlsx", blob);
 }
 
 async function handleImportFile(file){
