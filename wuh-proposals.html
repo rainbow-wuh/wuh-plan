@@ -493,6 +493,12 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
         <option value="new1y">โครงการใหม่ ระยะเวลา 1 ปี</option>
         <option value="newspecial">โครงการใหม่/พิเศษ ระยะเวลาเกิน 1 ปี</option>
       </select>
+      <select id="filter-division">
+        <option value="">แผนกทั้งหมด</option>
+      </select>
+      <select id="filter-department">
+        <option value="">ฝ่ายทั้งหมด</option>
+      </select>
       <div class="spacer"></div>
       <button class="btn-secondary" id="btn-download-template">⇩ เทมเพลตนำเข้า</button>
       <button class="btn-secondary" id="btn-import">⇧ นำเข้าโครงการ</button>
@@ -1204,6 +1210,8 @@ function goRegistryFilteredByStatus(statusKey){
   switchTab("registry");
   document.getElementById("filter-status").value = statusKey;
   document.getElementById("search-input").value = "";
+  document.getElementById("filter-division").value = "";
+  document.getElementById("filter-department").value = "";
   renderRegistry();
   toast("กรองตามสถานะ: "+(STATUS_META[statusKey]||{}).label);
 }
@@ -1211,6 +1219,8 @@ function goRegistrySearch(term){
   switchTab("registry");
   document.getElementById("filter-status").value = "";
   document.getElementById("search-input").value = term;
+  document.getElementById("filter-division").value = "";
+  document.getElementById("filter-department").value = "";
   renderRegistry();
   toast("ค้นหา: "+term);
 }
@@ -1400,13 +1410,30 @@ function renderDashboard(){
 }
 
 /* ---- registry (list) ---- */
+function populateFilterSelect(selectEl, values, allLabel){
+  var current=selectEl.value;
+  var uniq=[];
+  values.forEach(function(v){ if(v && uniq.indexOf(v)===-1) uniq.push(v); });
+  uniq.sort(function(a,b){ return a.localeCompare(b,"th"); });
+  selectEl.innerHTML = '<option value="">'+esc(allLabel)+'</option>'+
+    uniq.map(function(v){ return '<option value="'+esc(v)+'">'+esc(v)+'</option>'; }).join("");
+  if(current && uniq.indexOf(current)>-1) selectEl.value=current;
+}
+
 function renderRegistry(){
+  populateFilterSelect(document.getElementById("filter-division"), proposals.map(function(p){ return p.division; }), "แผนกทั้งหมด");
+  populateFilterSelect(document.getElementById("filter-department"), proposals.map(function(p){ return p.department; }), "ฝ่ายทั้งหมด");
+
   var q=(document.getElementById("search-input").value||"").trim().toLowerCase();
   var fStatus=document.getElementById("filter-status").value;
   var fType=document.getElementById("filter-type").value;
+  var fDivision=document.getElementById("filter-division").value;
+  var fDepartment=document.getElementById("filter-department").value;
   var list=proposals.filter(function(p){
     if(fStatus && p.status!==fStatus) return false;
     if(fType && p.type!==fType) return false;
+    if(fDivision && p.division!==fDivision) return false;
+    if(fDepartment && p.department!==fDepartment) return false;
     if(q){
       var hay=(p.name+" "+p.division+" "+p.department).toLowerCase();
       if(hay.indexOf(q)===-1) return false;
@@ -2038,6 +2065,8 @@ function attachListListeners(){
   document.getElementById("search-input").oninput=function(){ renderRegistry(); };
   document.getElementById("filter-status").onchange=function(){ renderRegistry(); };
   document.getElementById("filter-type").onchange=function(){ renderRegistry(); };
+  document.getElementById("filter-division").onchange=function(){ renderRegistry(); };
+  document.getElementById("filter-department").onchange=function(){ renderRegistry(); };
   document.getElementById("btn-download-template").onclick=function(){ downloadImportTemplate(); };
   document.getElementById("btn-import").onclick=function(){ document.getElementById("import-file-input").click(); };
   document.getElementById("import-file-input").onchange=function(e){
