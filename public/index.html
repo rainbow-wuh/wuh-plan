@@ -1349,6 +1349,7 @@ function wireChartHover(container, selector, data, opts){
 
 function renderBarChart(container, data, opts){
   opts=opts||{};
+  if(opts.horizontal) return renderBarChartHorizontal(container, data, opts);
   var w=opts.width||640, h=opts.height||260;
   var padL=64,padR=16,padT=14,padB=40;
   var innerW=w-padL-padR, innerH=h-padT-padB;
@@ -1377,6 +1378,47 @@ function renderBarChart(container, data, opts){
     svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(h-padB+18)+'" text-anchor="middle" font-size="12" fill="var(--ink-muted)">'+esc(d.label)+'</text>';
     if(opts.showValue){
       svg+='<text x="'+(bx+barW/2).toFixed(1)+'" y="'+(by-6).toFixed(1)+'" text-anchor="middle" font-size="11" fill="var(--ink)" font-weight="700">'+fmtInt(d.value)+'</text>';
+    }
+  });
+  svg+='</svg>';
+  container.innerHTML = svg;
+  wireChartHover(container, ".chart-bar-hitzone", data, Object.assign({}, opts, {
+    hotTarget:function(el){ return el.previousElementSibling; }
+  }));
+}
+
+function renderBarChartHorizontal(container, data, opts){
+  var w=opts.width||640;
+  var n=data.length||1;
+  var rowH=opts.rowHeight||38;
+  var padT=10, padB=32, padL=opts.labelWidth||150, padR=54;
+  var innerW=w-padL-padR;
+  var h=padT+padB+rowH*n;
+  var innerH=h-padT-padB;
+  var maxVal=Math.max.apply(null, data.map(function(d){ return d.value; }).concat([0]));
+  var rawStep=(maxVal||1)/5;
+  var step=niceCeil(rawStep);
+  if(opts.integer) step=Math.max(1, Math.ceil(step));
+  var tickCount=Math.max(1, Math.ceil((maxVal||1)/step));
+  var niceMax=step*tickCount;
+  var barH=Math.max(14, rowH*0.55);
+
+  var svg='<svg class="chart-svg" viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">';
+  for(var i=0;i<=tickCount;i++){
+    var val=step*i;
+    var x=padL+innerW*(val/niceMax);
+    svg+='<line x1="'+x.toFixed(1)+'" y1="'+padT+'" x2="'+x.toFixed(1)+'" y2="'+(padT+innerH)+'" stroke="var(--border)" stroke-width="1"/>';
+    svg+='<text x="'+x.toFixed(1)+'" y="'+(padT+innerH+18)+'" text-anchor="middle" font-size="11" fill="var(--ink-muted)">'+fmtInt(Math.round(val))+'</text>';
+  }
+  data.forEach(function(d,i){
+    var cy=padT+i*rowH+rowH/2;
+    var by=cy-barH/2;
+    var bw=maxVal<=0?0:innerW*((d.value||0)/niceMax);
+    svg+='<text x="'+(padL-10)+'" y="'+(cy+4).toFixed(1)+'" text-anchor="end" font-size="12" fill="var(--ink-muted)">'+esc(d.label)+'</text>';
+    svg+='<rect class="chart-bar" data-idx="'+i+'" x="'+padL+'" y="'+by.toFixed(1)+'" width="'+Math.max(0,bw).toFixed(1)+'" height="'+barH.toFixed(1)+'" rx="4" fill="'+d.color+'"/>';
+    svg+='<rect class="chart-bar-hitzone" data-idx="'+i+'" x="'+padL+'" y="'+(cy-rowH/2).toFixed(1)+'" width="'+innerW+'" height="'+rowH+'" fill="transparent"/>';
+    if(opts.showValue){
+      svg+='<text x="'+(padL+bw+8).toFixed(1)+'" y="'+(cy+4).toFixed(1)+'" font-size="11" fill="var(--ink)" font-weight="700">'+fmtInt(d.value)+'</text>';
     }
   });
   svg+='</svg>';
@@ -1575,11 +1617,9 @@ function renderBudgetAnalysis(){
   el.innerHTML =
     '<div class="page-title">วิเคราะห์งบประมาณ &amp; KPI</div>'+
     '<div class="page-sub">สรุปงบประมาณและสถานะการพิจารณาโครงการ ปีงบประมาณ '+esc(globalFiscalYear)+' ('+fmtInt(scoped.length)+' โครงการ)</div>'+
-    '<div class="panel-row-3" style="margin-bottom:16px;">'+
-      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามฝ่าย</h3><div id="dept-chart"></div></div>'+
-      '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามแผนก</h3><div id="division-chart"></div></div>'+
-      '<div class="panel"><h3 class="panel-title">สัดส่วนสถานะการพิจารณาโครงการ</h3><div id="status-donut"></div></div>'+
-    '</div>'+
+    '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามฝ่าย</h3><div id="dept-chart"></div></div>'+
+    '<div class="panel"><h3 class="panel-title">สรุปงบประมาณเสนอขอแยกตามแผนก</h3><div id="division-chart"></div></div>'+
+    '<div class="panel"><h3 class="panel-title">สัดส่วนสถานะการพิจารณาโครงการ</h3><div id="status-donut"></div></div>'+
     '<div class="stats cat-stats">'+
       CATEGORY_ORDER.map(function(k){
         return '<div class="stat-tile '+CATEGORY_META[k].cls+'"><div class="label">'+CATEGORY_META[k].label+'</div><div class="value num">฿'+fmtInt(catTotals[k])+'</div></div>';
@@ -1593,7 +1633,7 @@ function renderBudgetAnalysis(){
   } else {
     renderBarChart(deptEl, byDept.order.map(function(k){
       return {label:k, value:byDept.totals[k], color:"var(--status-submitted)"};
-    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
+    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
   var divisionEl=document.getElementById("division-chart");
@@ -1602,7 +1642,7 @@ function renderBudgetAnalysis(){
   } else {
     renderBarChart(divisionEl, byDivision.order.map(function(k){
       return {label:k, value:byDivision.totals[k], color:"var(--accent)"};
-    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
+    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }, onClick:function(d){ goRegistrySearch(d.label); }});
   }
 
   var statusKeys2=Object.keys(STATUS_META);
@@ -1616,7 +1656,7 @@ function renderBudgetAnalysis(){
   } else {
     renderBarChart(chartEl, CATEGORY_ORDER.map(function(k){
       return {label:CATEGORY_META[k].label, value:catTotals[k], color:"var(--"+CATEGORY_META[k].cls+")"};
-    }), {tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }});
+    }), {horizontal:true, tooltipValue:function(v){ return fmtMoney(v)+" บาท"; }});
   }
 }
 
