@@ -393,12 +393,7 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
 }
 .icon-btn:hover{color:var(--danger);border-color:var(--danger);}
 
-.timeline-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-.timeline-seq{
-  display:inline-block;background:var(--surface-alt);color:var(--ink-muted);
-  font-weight:700;font-size:12.5px;border-radius:6px;padding:3px 8px;margin-right:8px;
-}
-.timeline-project-name{font-size:15px;font-weight:700;}
+.timeline-actions{display:flex;flex-direction:column;gap:6px;min-width:100px;}
 table.timeline-table{width:100%;border-collapse:collapse;font-size:13px;}
 table.timeline-table th{
   background:var(--surface-alt);color:var(--ink-muted);
@@ -1771,116 +1766,157 @@ function renderStrategyAnalysis(){
   }), {showValue:true, integer:true, tooltipValue:function(v){ return fmtInt(v)+" โครงการ"; }});
 }
 
+var timelineEditingId=null;
+
+function fmtDateShort(iso){
+  if(!iso) return "";
+  var d=new Date(iso+"T00:00:00");
+  if(isNaN(d.getTime())) return iso;
+  var dd=String(d.getDate()).padStart(2,"0");
+  var mm=String(d.getMonth()+1).padStart(2,"0");
+  var yy=d.getFullYear()+543;
+  return dd+"/"+mm+"/"+yy;
+}
+
 function renderTimelineTab(){
   var el=document.getElementById("view-timeline");
   var scoped=proposalsInFiscalYear();
   var months=fiscalYearMonths(globalFiscalYear);
 
   if(!scoped.length){
+    timelineEditingId=null;
     el.innerHTML =
       '<div class="page-title">แผนการดำเนินงานและตารางเวลา</div>'+
       '<div class="page-sub">ปีงบประมาณ '+esc(globalFiscalYear)+'</div>'+
       '<div class="panel"><p class="hint">ยังไม่มีโครงการในปีงบประมาณนี้</p></div>';
     return;
   }
+  if(timelineEditingId && !scoped.some(function(p){ return p.id===timelineEditingId; })) timelineEditingId=null;
 
   el.innerHTML =
     '<div class="page-title">แผนการดำเนินงานและตารางเวลา</div>'+
     '<div class="page-sub">Operations Plan &amp; Timeline · ปีงบประมาณ '+esc(globalFiscalYear)+' ('+fmtInt(scoped.length)+' โครงการ)</div>'+
-    '<div id="timeline-groups"></div>';
+    '<div class="table-wrap"><table class="timeline-table"><thead><tr>'+
+      '<th>ลำดับ</th><th>โครงการ</th><th>ลำดับย่อย</th><th>กิจกรรม / ขั้นตอนการดำเนินงาน</th><th>ผู้รับผิดชอบ</th>'+
+      '<th>วันที่เริ่มต้น</th><th>วันที่สิ้นสุด</th><th>ระยะเวลา (วัน)</th><th>สถานะ</th>'+
+      months.map(function(m){ return '<th class="gantt-head">'+esc(m.label)+'</th>'; }).join("")+
+      '<th></th><th></th>'+
+    '</tr></thead><tbody id="timeline-body"></tbody></table></div>';
 
-  var groupsRoot=document.getElementById("timeline-groups");
-  groupsRoot.innerHTML = scoped.map(function(p,i){ return timelineGroupHTML(p,i+1,months); }).join("");
-
-  scoped.forEach(function(p){
-    wireTimelineGroup(p, months);
-  });
+  renderTimelineBody(scoped, months);
 }
 
-function timelineGroupHTML(p, seq, months){
-  var steps = p.workSteps && p.workSteps.length ? p.workSteps : [{period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"}];
-  var rows = steps.map(function(step,i){ return timelineRowHTML(p.id, step, i, seq, months); }).join("");
-  return (
-    '<div class="panel timeline-panel" data-tl-project="'+esc(p.id)+'">'+
-      '<div class="timeline-panel-head">'+
-        '<div><span class="timeline-seq">'+seq+'</span><span class="timeline-project-name">'+esc(p.name||"(ไม่ระบุชื่อโครงการ)")+'</span></div>'+
-        '<div class="row" style="gap:8px;">'+
-          '<button class="btn-secondary" data-tl-add="'+esc(p.id)+'">+ เพิ่มขั้นตอน</button>'+
-          '<button class="btn-primary" data-tl-save="'+esc(p.id)+'">บันทึก</button>'+
-        '</div>'+
-      '</div>'+
-      '<div class="table-wrap">'+
-      '<table class="timeline-table"><thead><tr>'+
-        '<th>ลำดับย่อย</th><th>กิจกรรม / ขั้นตอนการดำเนินงาน</th><th>ผู้รับผิดชอบ</th>'+
-        '<th>วันที่เริ่มต้น</th><th>วันที่สิ้นสุด</th><th>ระยะเวลา (วัน)</th><th>สถานะ</th>'+
-        months.map(function(m){ return '<th class="gantt-head">'+esc(m.label)+'</th>'; }).join("")+
-      '</tr></thead><tbody data-tl-body="'+esc(p.id)+'">'+rows+'</tbody></table>'+
-      '</div>'+
-    '</div>'
-  );
+function renderTimelineBody(scoped, months){
+  var tbody=document.getElementById("timeline-body");
+  tbody.innerHTML = scoped.map(function(p,i){ return timelineProjectRowsHTML(p, i+1, months); }).join("");
+  wireTimelineBody(scoped, months);
 }
 
-function timelineRowHTML(pid, step, i, seq, months){
-  var dur=stepDurationDays(step);
-  return (
-    '<tr data-tl-row="'+i+'">'+
-      '<td>'+seq+'.'+(i+1)+'</td>'+
-      '<td><input type="text" data-tl-field="activity" value="'+esc(step.activity||"")+'"></td>'+
-      '<td><input type="text" data-tl-field="responsible" value="'+esc(step.responsible||"")+'"></td>'+
-      '<td><input type="date" data-tl-field="startDate" value="'+esc(step.startDate||"")+'"></td>'+
-      '<td><input type="date" data-tl-field="endDate" value="'+esc(step.endDate||"")+'"></td>'+
-      '<td class="num" data-tl-duration>'+(dur||"–")+'</td>'+
-      '<td><select data-tl-field="status">'+
-        Object.keys(STEP_STATUS_META).map(function(k){
-          return '<option value="'+k+'"'+(step.status===k?" selected":"")+'>'+esc(STEP_STATUS_META[k].label)+'</option>';
-        }).join("")+
-      '</select></td>'+
-      months.map(function(m){
-        var on=stepOverlapsMonth(step,m);
-        var cls=(step.status&&STEP_STATUS_META[step.status]?STEP_STATUS_META[step.status].cls:"status-draft");
-        return '<td class="gantt-cell'+(on?" active "+cls:"")+'"></td>';
-      }).join("")+
-      '<td><button class="icon-btn" data-tl-remove="'+i+'" title="ลบขั้นตอนนี้">✕</button></td>'+
-    '</tr>'
-  );
-}
-
-function wireTimelineGroup(p, months){
-  var panel=document.querySelector('.timeline-panel[data-tl-project="'+p.id+'"]');
-  if(!panel) return;
-
-  function rerender(){
-    panel.querySelector('[data-tl-body]').innerHTML = (p.workSteps||[]).map(function(step,i){
-      return timelineRowHTML(p.id, step, i, panel.querySelector(".timeline-seq").textContent, months);
+function timelineProjectRowsHTML(p, seq, months){
+  var editing = (timelineEditingId===p.id);
+  var steps = (p.workSteps&&p.workSteps.length) ? p.workSteps : [{period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"}];
+  var n=steps.length;
+  return steps.map(function(step,i){
+    var first=(i===0);
+    var monthsHTML = months.map(function(m){
+      var on=stepOverlapsMonth(step,m);
+      var cls=(step.status&&STEP_STATUS_META[step.status]?STEP_STATUS_META[step.status].cls:"status-draft");
+      return '<td class="gantt-cell'+(on?" active "+cls:"")+'"></td>';
     }).join("");
-    wireRows();
-  }
-  function wireRows(){
-    var body=panel.querySelector('[data-tl-body]');
-    Array.prototype.forEach.call(body.querySelectorAll("tr[data-tl-row]"), function(tr){
-      var i=parseInt(tr.getAttribute("data-tl-row"),10);
-      var step=p.workSteps[i];
-      Array.prototype.forEach.call(tr.querySelectorAll("[data-tl-field]"), function(inp){
-        inp.onchange=function(){
-          var key=inp.getAttribute("data-tl-field");
-          step[key]=inp.value;
-          rerender();
-        };
-      });
-      var rm=tr.querySelector("[data-tl-remove]");
-      if(rm) rm.onclick=function(){ p.workSteps.splice(i,1); rerender(); };
-    });
-  }
-  wireRows();
 
-  var addBtn=panel.querySelector("[data-tl-add]");
-  if(addBtn) addBtn.onclick=function(){
-    if(!p.workSteps) p.workSteps=[];
-    p.workSteps.push({period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"});
-    rerender();
-  };
-  var saveBtn=panel.querySelector("[data-tl-save]");
-  if(saveBtn) saveBtn.onclick=function(){ saveTimelineProject(p); };
+    var cells;
+    if(editing){
+      cells =
+        '<td><input type="text" data-tl-field="activity" value="'+esc(step.activity||"")+'"></td>'+
+        '<td><input type="text" data-tl-field="responsible" value="'+esc(step.responsible||"")+'"></td>'+
+        '<td><input type="date" data-tl-field="startDate" value="'+esc(step.startDate||"")+'"></td>'+
+        '<td><input type="date" data-tl-field="endDate" value="'+esc(step.endDate||"")+'"></td>'+
+        '<td class="num">'+(stepDurationDays(step)||"–")+'</td>'+
+        '<td><select data-tl-field="status">'+
+          Object.keys(STEP_STATUS_META).map(function(k){
+            return '<option value="'+k+'"'+(step.status===k?" selected":"")+'>'+esc(STEP_STATUS_META[k].label)+'</option>';
+          }).join("")+
+        '</select></td>';
+    } else {
+      var meta=STEP_STATUS_META[step.status]||STEP_STATUS_META.not_started;
+      cells =
+        '<td>'+esc(step.activity||"–")+'</td>'+
+        '<td>'+esc(step.responsible||"–")+'</td>'+
+        '<td>'+(step.startDate?fmtDateShort(step.startDate):"–")+'</td>'+
+        '<td>'+(step.endDate?fmtDateShort(step.endDate):"–")+'</td>'+
+        '<td class="num">'+(stepDurationDays(step)||"–")+'</td>'+
+        '<td><span class="badge '+meta.cls+'">'+esc(meta.label)+'</span></td>';
+    }
+
+    var leadCells = first ?
+      '<td rowspan="'+n+'">'+seq+'</td><td rowspan="'+n+'">'+esc(p.name||"(ไม่ระบุชื่อโครงการ)")+'</td>' : '';
+    var removeCell = editing ? '<td><button class="icon-btn" data-tl-remove="'+i+'" title="ลบขั้นตอนนี้">✕</button></td>' : '<td></td>';
+    var actionsCell = first ? '<td rowspan="'+n+'">'+(editing ?
+        '<div class="timeline-actions">'+
+          '<button class="btn-secondary" data-tl-add>+ เพิ่มขั้นตอน</button>'+
+          '<button class="btn-primary" data-tl-save>บันทึก</button>'+
+          '<button class="btn-secondary" data-tl-cancel>ยกเลิก</button>'+
+        '</div>'
+        : '<button class="btn-secondary" data-tl-edit>แก้ไข</button>'
+      )+'</td>' : '';
+
+    return '<tr data-tl-project="'+esc(p.id)+'" data-tl-row="'+i+'">'+
+      leadCells+
+      '<td>'+seq+'.'+(i+1)+'</td>'+
+      cells+
+      monthsHTML+
+      removeCell+
+      actionsCell+
+    '</tr>';
+  }).join("");
+}
+
+function wireTimelineBody(scoped, months){
+  var tbody=document.getElementById("timeline-body");
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-tl-edit]"), function(btn){
+    var tr=btn.closest("tr");
+    var pid=tr.getAttribute("data-tl-project");
+    btn.onclick=function(){ timelineEditingId=pid; renderTimelineBody(scoped, months); };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-tl-cancel]"), function(btn){
+    btn.onclick=function(){ timelineEditingId=null; renderTimelineBody(scoped, months); };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-tl-save]"), function(btn){
+    var tr=btn.closest("tr");
+    var pid=tr.getAttribute("data-tl-project");
+    var p=scoped.find(function(x){ return x.id===pid; });
+    btn.onclick=function(){ saveTimelineProject(p); timelineEditingId=null; renderTimelineBody(scoped, months); };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-tl-add]"), function(btn){
+    var tr=btn.closest("tr");
+    var pid=tr.getAttribute("data-tl-project");
+    var p=scoped.find(function(x){ return x.id===pid; });
+    btn.onclick=function(){
+      if(!p.workSteps) p.workSteps=[];
+      p.workSteps.push({period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"});
+      renderTimelineBody(scoped, months);
+    };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("[data-tl-remove]"), function(btn){
+    var tr=btn.closest("tr");
+    var pid=tr.getAttribute("data-tl-project");
+    var i=parseInt(btn.getAttribute("data-tl-remove"),10);
+    var p=scoped.find(function(x){ return x.id===pid; });
+    btn.onclick=function(){ p.workSteps.splice(i,1); renderTimelineBody(scoped, months); };
+  });
+  Array.prototype.forEach.call(tbody.querySelectorAll("tr[data-tl-project]"), function(tr){
+    var pid=tr.getAttribute("data-tl-project");
+    if(pid!==timelineEditingId) return;
+    var i=parseInt(tr.getAttribute("data-tl-row"),10);
+    var p=scoped.find(function(x){ return x.id===pid; });
+    var step=p.workSteps[i];
+    Array.prototype.forEach.call(tr.querySelectorAll("[data-tl-field]"), function(inp){
+      inp.onchange=function(){
+        step[inp.getAttribute("data-tl-field")]=inp.value;
+        renderTimelineBody(scoped, months);
+      };
+    });
+  });
 }
 
 function saveTimelineProject(p){
