@@ -392,6 +392,29 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
   color:var(--ink-muted);width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1;
 }
 .icon-btn:hover{color:var(--danger);border-color:var(--danger);}
+
+.timeline-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.timeline-seq{
+  display:inline-block;background:var(--surface-alt);color:var(--ink-muted);
+  font-weight:700;font-size:12.5px;border-radius:6px;padding:3px 8px;margin-right:8px;
+}
+.timeline-project-name{font-size:15px;font-weight:700;}
+table.timeline-table{width:100%;border-collapse:collapse;font-size:13px;}
+table.timeline-table th{
+  background:var(--surface-alt);color:var(--ink-muted);
+  text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.02em;
+  padding:8px 6px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+table.timeline-table th.gantt-head{text-align:center;width:34px;}
+table.timeline-table td{padding:5px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
+table.timeline-table tr:nth-child(even) td{background:var(--surface-alt);}
+table.timeline-table input,table.timeline-table select{font-size:13px;padding:5px 6px;width:100%;min-width:90px;}
+table.timeline-table td.gantt-cell{padding:5px 2px;text-align:center;width:34px;}
+table.timeline-table td.gantt-cell.active{background:var(--status-draft);opacity:.85;}
+table.timeline-table td.gantt-cell.active.status-draft{background:var(--status-draft);}
+table.timeline-table td.gantt-cell.active.status-submitted{background:var(--status-submitted);}
+table.timeline-table td.gantt-cell.active.status-approved{background:var(--status-approved);}
+table.timeline-table td.gantt-cell.active.status-revision{background:var(--status-revision);}
 .add-row-btn{
   background:var(--accent-soft);color:var(--accent);border:1px solid transparent;
   padding:7px 14px;border-radius:7px;font-size:13.5px;font-weight:700;cursor:pointer;
@@ -474,6 +497,7 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
   <button class="tab" data-tab="registry"><span class="tab-icon">📁</span><span>รายการเสนอโครงการทั้งหมด</span><span class="tab-count" id="tab-count">0</span></button>
   <button class="tab" data-tab="budget"><span class="tab-icon">📈</span><span>วิเคราะห์งบประมาณ &amp; KPI</span></button>
   <button class="tab" data-tab="strategy"><span class="tab-icon">🎯</span><span>การสอดคล้องยุทธศาสตร์</span></button>
+  <button class="tab" data-tab="timeline"><span class="tab-icon">🗓️</span><span>แผนการดำเนินงานและตารางเวลา</span></button>
   <div class="spacer"></div>
   <div class="fy-picker">
     <span class="fy-picker-label">ปีงบประมาณ</span>
@@ -521,6 +545,7 @@ table.grid-table input,table.grid-table textarea,table.grid-table select{font-si
 
   <section id="view-budget" style="display:none;"></section>
   <section id="view-strategy" style="display:none;"></section>
+  <section id="view-timeline" style="display:none;"></section>
 
   <section id="view-detail" style="display:none;"></section>
 </main>
@@ -625,7 +650,7 @@ function emptyProposal(){
     rationale:"", objectives:"",
     targetGroup:"", targetQty:"", targetUnit:"month",
     mainActivities:"",
-    workSteps:[ {period:"",activity:"",responsible:"",note:""} ],
+    workSteps:[ {period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"} ],
     financial:{ revenueExpense:0, annualRevenue:0 },
     qualitativeKPIs:[ {indicator:"",target:"",unit:"",method:""} ],
     socialValue:0,
@@ -1184,9 +1209,9 @@ function exampleSeed(){
   a.targetGroup="ผู้ป่วยที่มีข้อบ่งชี้ผ่าตัดเล็ก-กลาง ไม่ซับซ้อน"; a.targetQty="15"; a.targetUnit="day";
   a.mainActivities="จัดตั้งหน่วยผ่าตัดวันเดียวกลับ จัดทีมพยาบาลเฉพาะทาง จัดทำแนวทางคัดกรองผู้ป่วยและติดตามหลังผ่าตัด";
   a.workSteps=[
-    {period:"ต.ค.–ธ.ค. 2568",activity:"จัดเตรียมพื้นที่และอุปกรณ์",responsible:"ฝ่ายวิศวกรรม/ศัลยกรรม",note:""},
-    {period:"ม.ค. 2569",activity:"อบรมทีมพยาบาลและแพทย์",responsible:"ฝ่ายพัฒนาบุคลากร",note:""},
-    {period:"ก.พ. 2569",activity:"เปิดให้บริการนำร่อง",responsible:"หัวหน้าศัลยกรรม",note:"ประเมินผล 3 เดือน"}
+    {period:"ต.ค.–ธ.ค. 2568",activity:"จัดเตรียมพื้นที่และอุปกรณ์",responsible:"ฝ่ายวิศวกรรม/ศัลยกรรม",note:"",startDate:"2025-10-01",endDate:"2025-12-31",status:"done"},
+    {period:"ม.ค. 2569",activity:"อบรมทีมพยาบาลและแพทย์",responsible:"ฝ่ายพัฒนาบุคลากร",note:"",startDate:"2026-01-01",endDate:"2026-01-31",status:"in_progress"},
+    {period:"ก.พ. 2569",activity:"เปิดให้บริการนำร่อง",responsible:"หัวหน้าศัลยกรรม",note:"ประเมินผล 3 เดือน",startDate:"2026-02-01",endDate:"2026-04-30",status:"not_started"}
   ];
   a.financial={revenueExpense:650000,annualRevenue:900000};
   a.qualitativeKPIs=[
@@ -1235,7 +1260,7 @@ function exampleSeed(){
   b.objectives="เพื่อลดอัตราความคลาดเคลื่อนในการจ่ายยาและเพิ่มความเร็วในการให้บริการผู้ป่วยนอก";
   b.targetGroup="ผู้ป่วยนอกที่รับยาที่ห้องยา OPD"; b.targetQty="1200"; b.targetUnit="day";
   b.mainActivities="บำรุงรักษาและต่ออายุสัญญาระบบจ่ายยาอัตโนมัติประจำปี พร้อมอบรมเจ้าหน้าที่";
-  b.workSteps=[{period:"ตลอดปีงบประมาณ",activity:"บำรุงรักษาเชิงป้องกันรายไตรมาส",responsible:"ฝ่ายเภสัชกรรม",note:""}];
+  b.workSteps=[{period:"ตลอดปีงบประมาณ",activity:"บำรุงรักษาเชิงป้องกันรายไตรมาส",responsible:"ฝ่ายเภสัชกรรม",note:"",startDate:"2025-10-01",endDate:"2026-09-30",status:"in_progress"}];
   b.outputs="ระบบจ่ายยาอัตโนมัติพร้อมใช้งานตลอดปี"; b.outcomes="อัตราความคลาดเคลื่อนในการจ่ายยาต่ำกว่า 0.1%";
   b.programCode="Z40101030-02";
   b.budgetItems=[{item:"ค่าบำรุงรักษาระบบจ่ายยาอัตโนมัติรายปี",amount:480000,category:"operating"},{item:"วัสดุสิ้นเปลืองสำหรับระบบ",amount:95000,category:"materials"}];
@@ -1247,7 +1272,41 @@ function exampleSeed(){
   return [a,b];
 }
 
-var TABS = ["dashboard","registry","budget","strategy"];
+var TABS = ["dashboard","registry","budget","strategy","timeline"];
+
+var STEP_STATUS_META = {
+  not_started:{label:"ยังไม่เริ่ม",cls:"status-draft"},
+  in_progress:{label:"กำลังดำเนินการ",cls:"status-submitted"},
+  done:{label:"เสร็จสิ้น",cls:"status-approved"},
+  delayed:{label:"ล่าช้า",cls:"status-revision"}
+};
+
+function fiscalYearMonths(fyBE){
+  var ceYear = Number(fyBE) - 543;
+  var labels = ["ต.ค.","พ.ย.","ธ.ค.","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย."];
+  var monthNums = [10,11,12,1,2,3,4,5,6,7,8,9];
+  return labels.map(function(lbl,i){
+    var m=monthNums[i];
+    var y = m>=10 ? ceYear-1 : ceYear;
+    var beShort = String((y+543)%100);
+    return {
+      label: lbl+beShort,
+      start: new Date(y,m-1,1),
+      end: new Date(y,m,0,23,59,59)
+    };
+  });
+}
+function stepDurationDays(step){
+  if(!step.startDate || !step.endDate) return "";
+  var s=new Date(step.startDate+"T00:00:00"), e=new Date(step.endDate+"T00:00:00");
+  var diff = Math.round((e-s)/86400000)+1;
+  return diff>0 ? diff : "";
+}
+function stepOverlapsMonth(step, monthInfo){
+  if(!step.startDate || !step.endDate) return false;
+  var s=new Date(step.startDate+"T00:00:00"), e=new Date(step.endDate+"T23:59:59");
+  return s<=monthInfo.end && e>=monthInfo.start;
+}
 
 function renderTopbarActions(){
   var el=document.getElementById("topbar-actions");
@@ -1276,6 +1335,7 @@ function renderShell(){
   else if(view==="registry") renderRegistry();
   else if(view==="budget") renderBudgetAnalysis();
   else if(view==="strategy") renderStrategyAnalysis();
+  else if(view==="timeline") renderTimelineTab();
 }
 
 function switchTab(tab){
@@ -1709,6 +1769,136 @@ function renderStrategyAnalysis(){
   renderBarChart(document.getElementById("strategy-hosp-chart"), STRATEGIES.hospital.map(function(h,i){
     return {label:h.id, value:hospCounts[h.id]||0, color:palette[i%palette.length], full:h.label};
   }), {showValue:true, integer:true, tooltipValue:function(v){ return fmtInt(v)+" โครงการ"; }});
+}
+
+function renderTimelineTab(){
+  var el=document.getElementById("view-timeline");
+  var scoped=proposalsInFiscalYear();
+  var months=fiscalYearMonths(globalFiscalYear);
+
+  if(!scoped.length){
+    el.innerHTML =
+      '<div class="page-title">แผนการดำเนินงานและตารางเวลา</div>'+
+      '<div class="page-sub">ปีงบประมาณ '+esc(globalFiscalYear)+'</div>'+
+      '<div class="panel"><p class="hint">ยังไม่มีโครงการในปีงบประมาณนี้</p></div>';
+    return;
+  }
+
+  el.innerHTML =
+    '<div class="page-title">แผนการดำเนินงานและตารางเวลา</div>'+
+    '<div class="page-sub">Operations Plan &amp; Timeline · ปีงบประมาณ '+esc(globalFiscalYear)+' ('+fmtInt(scoped.length)+' โครงการ)</div>'+
+    '<div id="timeline-groups"></div>';
+
+  var groupsRoot=document.getElementById("timeline-groups");
+  groupsRoot.innerHTML = scoped.map(function(p,i){ return timelineGroupHTML(p,i+1,months); }).join("");
+
+  scoped.forEach(function(p){
+    wireTimelineGroup(p, months);
+  });
+}
+
+function timelineGroupHTML(p, seq, months){
+  var steps = p.workSteps && p.workSteps.length ? p.workSteps : [{period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"}];
+  var rows = steps.map(function(step,i){ return timelineRowHTML(p.id, step, i, seq, months); }).join("");
+  return (
+    '<div class="panel timeline-panel" data-tl-project="'+esc(p.id)+'">'+
+      '<div class="timeline-panel-head">'+
+        '<div><span class="timeline-seq">'+seq+'</span><span class="timeline-project-name">'+esc(p.name||"(ไม่ระบุชื่อโครงการ)")+'</span></div>'+
+        '<div class="row" style="gap:8px;">'+
+          '<button class="btn-secondary" data-tl-add="'+esc(p.id)+'">+ เพิ่มขั้นตอน</button>'+
+          '<button class="btn-primary" data-tl-save="'+esc(p.id)+'">บันทึก</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="table-wrap">'+
+      '<table class="timeline-table"><thead><tr>'+
+        '<th>ลำดับย่อย</th><th>กิจกรรม / ขั้นตอนการดำเนินงาน</th><th>ผู้รับผิดชอบ</th>'+
+        '<th>วันที่เริ่มต้น</th><th>วันที่สิ้นสุด</th><th>ระยะเวลา (วัน)</th><th>สถานะ</th>'+
+        months.map(function(m){ return '<th class="gantt-head">'+esc(m.label)+'</th>'; }).join("")+
+      '</tr></thead><tbody data-tl-body="'+esc(p.id)+'">'+rows+'</tbody></table>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function timelineRowHTML(pid, step, i, seq, months){
+  var dur=stepDurationDays(step);
+  return (
+    '<tr data-tl-row="'+i+'">'+
+      '<td>'+seq+'.'+(i+1)+'</td>'+
+      '<td><input type="text" data-tl-field="activity" value="'+esc(step.activity||"")+'"></td>'+
+      '<td><input type="text" data-tl-field="responsible" value="'+esc(step.responsible||"")+'"></td>'+
+      '<td><input type="date" data-tl-field="startDate" value="'+esc(step.startDate||"")+'"></td>'+
+      '<td><input type="date" data-tl-field="endDate" value="'+esc(step.endDate||"")+'"></td>'+
+      '<td class="num" data-tl-duration>'+(dur||"–")+'</td>'+
+      '<td><select data-tl-field="status">'+
+        Object.keys(STEP_STATUS_META).map(function(k){
+          return '<option value="'+k+'"'+(step.status===k?" selected":"")+'>'+esc(STEP_STATUS_META[k].label)+'</option>';
+        }).join("")+
+      '</select></td>'+
+      months.map(function(m){
+        var on=stepOverlapsMonth(step,m);
+        var cls=(step.status&&STEP_STATUS_META[step.status]?STEP_STATUS_META[step.status].cls:"status-draft");
+        return '<td class="gantt-cell'+(on?" active "+cls:"")+'"></td>';
+      }).join("")+
+      '<td><button class="icon-btn" data-tl-remove="'+i+'" title="ลบขั้นตอนนี้">✕</button></td>'+
+    '</tr>'
+  );
+}
+
+function wireTimelineGroup(p, months){
+  var panel=document.querySelector('.timeline-panel[data-tl-project="'+p.id+'"]');
+  if(!panel) return;
+
+  function rerender(){
+    panel.querySelector('[data-tl-body]').innerHTML = (p.workSteps||[]).map(function(step,i){
+      return timelineRowHTML(p.id, step, i, panel.querySelector(".timeline-seq").textContent, months);
+    }).join("");
+    wireRows();
+  }
+  function wireRows(){
+    var body=panel.querySelector('[data-tl-body]');
+    Array.prototype.forEach.call(body.querySelectorAll("tr[data-tl-row]"), function(tr){
+      var i=parseInt(tr.getAttribute("data-tl-row"),10);
+      var step=p.workSteps[i];
+      Array.prototype.forEach.call(tr.querySelectorAll("[data-tl-field]"), function(inp){
+        inp.onchange=function(){
+          var key=inp.getAttribute("data-tl-field");
+          step[key]=inp.value;
+          rerender();
+        };
+      });
+      var rm=tr.querySelector("[data-tl-remove]");
+      if(rm) rm.onclick=function(){ p.workSteps.splice(i,1); rerender(); };
+    });
+  }
+  wireRows();
+
+  var addBtn=panel.querySelector("[data-tl-add]");
+  if(addBtn) addBtn.onclick=function(){
+    if(!p.workSteps) p.workSteps=[];
+    p.workSteps.push({period:"",activity:"",responsible:"",note:"",startDate:"",endDate:"",status:"not_started"});
+    rerender();
+  };
+  var saveBtn=panel.querySelector("[data-tl-save]");
+  if(saveBtn) saveBtn.onclick=function(){ saveTimelineProject(p); };
+}
+
+function saveTimelineProject(p){
+  var now=new Date().toISOString();
+  p.updatedAt=now;
+  if(db){
+    var data=JSON.parse(JSON.stringify(p));
+    db.collection("proposals").doc(p.id).set(data).then(function(){
+      toast("บันทึกตารางเวลาโครงการเรียบร้อย: "+(p.name||""));
+    }).catch(function(err){
+      toast("บันทึกไม่สำเร็จ: "+(err&&err.message?err.message:"unknown"));
+    });
+  } else {
+    var idx=proposals.findIndex(function(x){ return x.id===p.id; });
+    if(idx>-1) proposals[idx]=p;
+    saveLocal(proposals);
+    toast("บันทึกในเครื่องนี้แล้ว (โหมดออฟไลน์): "+(p.name||""));
+  }
 }
 
 /* ---- detail rendering ---- */
